@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme/app_theme.dart';
 
 class VisitPage extends StatelessWidget {
   const VisitPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 🔹 MOCK VISITS DATA (matches Visit model)
+    /// 🔹 MOCK VISITS DATA
     final List<Map<String, dynamic>> visits = [
       {
         "patient_name": "Anita Verma",
@@ -23,15 +24,20 @@ class VisitPage extends StatelessWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Patient Visits"), centerTitle: true),
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(title: const Text("Patient Visits"), elevation: 0),
       body: visits.isEmpty
-          ? const Center(child: Text("No visits scheduled"))
+          ? const Center(
+              child: Text(
+                "No visits scheduled",
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: visits.length,
               itemBuilder: (context, index) {
-                final visit = visits[index];
-                return _VisitCard(visit);
+                return _VisitCard(visit: visits[index]);
               },
             ),
     );
@@ -40,7 +46,7 @@ class VisitPage extends StatelessWidget {
 
 class _VisitCard extends StatelessWidget {
   final Map<String, dynamic> visit;
-  const _VisitCard(this.visit);
+  const _VisitCard({required this.visit});
 
   @override
   Widget build(BuildContext context) {
@@ -50,44 +56,36 @@ class _VisitCard extends StatelessWidget {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔹 Header Row
+            /// 👤 PATIENT + STATUS
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   visit["patient_name"],
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-                Chip(
-                  label: Text(
-                    completed ? "COMPLETED" : "PENDING",
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  backgroundColor: completed ? Colors.green : Colors.orange,
-                ),
+                _StatusBadge(completed: completed),
               ],
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
-            // 🔹 Address
+            /// 📍 ADDRESS
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(Icons.location_on, size: 18, color: Colors.grey),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     visit["address"],
-                    style: const TextStyle(color: Colors.grey),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
               ],
@@ -95,30 +93,61 @@ class _VisitCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // 🔹 Time
+            /// ⏰ TIME
             Row(
               children: [
                 const Icon(Icons.access_time, size: 18, color: Colors.grey),
                 const SizedBox(width: 6),
-                Text(DateFormat("dd MMM yyyy • hh:mm a").format(time)),
+                Text(
+                  DateFormat("dd MMM yyyy • hh:mm a").format(time),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               ],
             ),
 
-            const SizedBox(height: 16),
+            if (!completed) ...[
+              const SizedBox(height: 16),
 
-            // 🔹 Action Button
-            if (!completed)
+              /// ✅ COMPLETE BUTTON
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // future: mark completed
+                    // future: mark visit completed
                   },
-                  icon: const Icon(Icons.check_circle),
+                  icon: const Icon(Icons.check_circle_outline),
                   label: const Text("Mark as Completed"),
                 ),
               ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 🟢🔴 STATUS BADGE
+class _StatusBadge extends StatelessWidget {
+  final bool completed;
+  const _StatusBadge({required this.completed});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = completed ? AppTheme.success : Colors.orange;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        completed ? "COMPLETED" : "PENDING",
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
         ),
       ),
     );

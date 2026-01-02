@@ -2,14 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_provider.dart';
 import 'sos_provider.dart';
+import '../../routes/app_routes.dart';
 
 class SOSPage extends ConsumerWidget {
   const SOSPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final staffId = ref.watch(authProvider)!;
+    final auth = ref.watch(authProvider);
+    final staffId = auth.staffId;
     final ctrl = TextEditingController();
+
+    // 🔒 If not logged in
+    if (staffId == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      });
+
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -40,7 +51,7 @@ class SOSPage extends ConsumerWidget {
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        "Use SOS only in case of real emergency.\nYour location & message will be sent to admin.",
+                        "Use SOS only in case of real emergency.\nYour message will be sent to admin immediately.",
                         style: TextStyle(fontSize: 14),
                       ),
                     ),

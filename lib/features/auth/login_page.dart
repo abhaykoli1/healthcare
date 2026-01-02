@@ -8,111 +8,58 @@ class LoginPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final staffIdCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final auth = ref.watch(authProvider);
 
     return Scaffold(
       body: Center(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.all(24),
           child: Card(
-            elevation: 6,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 🏥 APP ICON
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).primaryColor.withOpacity(0.1),
-                    child: Icon(
-                      Icons.local_hospital,
-                      size: 40,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 🔐 TITLE
+                  const Icon(Icons.local_hospital, size: 48),
+                  const SizedBox(height: 12),
                   const Text(
                     "Staff Login",
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(height: 24),
 
-                  const SizedBox(height: 6),
-                  const Text(
-                    "Login using your Staff ID",
-                    style: TextStyle(color: Colors.grey),
+                  TextField(
+                    controller: phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: "Registered Mobile Number",
+                      prefixIcon: Icon(Icons.phone),
+                    ),
                   ),
 
                   const SizedBox(height: 24),
 
-                  // 🆔 STAFF ID INPUT
-                  TextField(
-                    controller: staffIdCtrl,
-                    decoration: InputDecoration(
-                      labelText: "Staff ID",
-                      prefixIcon: const Icon(Icons.badge),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // 🔵 LOGIN BUTTON
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: () {
-                        if (staffIdCtrl.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Please enter Staff ID"),
-                            ),
-                          );
-                          return;
-                        }
+                      onPressed: auth.loading
+                          ? null
+                          : () async {
+                              await ref
+                                  .read(authProvider.notifier)
+                                  .sendOtp(phoneCtrl.text);
 
-                        ref.read(authProvider.notifier).state = staffIdCtrl.text
-                            .trim();
-
-                        Navigator.pushReplacementNamed(
-                          context,
-                          AppRoutes.dashboard,
-                        );
-                      },
-                      child: const Text(
-                        "LOGIN",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                              Navigator.pushNamed(
+                                context,
+                                AppRoutes.otp,
+                                arguments: phoneCtrl.text,
+                              );
+                            },
+                      child: auth.loading
+                          ? const CircularProgressIndicator()
+                          : const Text("SEND OTP"),
                     ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // ℹ️ FOOTER
-                  const Text(
-                    "Contact admin if you don't have a Staff ID",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

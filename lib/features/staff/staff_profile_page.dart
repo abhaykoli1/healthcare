@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme/app_theme.dart';
+import '../../routes/app_routes.dart';
 
 class StaffProfilePage extends StatelessWidget {
   const StaffProfilePage({super.key});
@@ -9,210 +11,203 @@ class StaffProfilePage extends StatelessWidget {
     final data = {
       "full_name": "Riya Sharma",
       "phone": "9876543210",
-      "staff_type": "GNM Nurse",
+      "email": "riya@gmail.com",
+      "staff_type": "GNM",
+      "aadhaar_no": "XXXX-XXXX-1234",
       "aadhaar_verified": true,
-      "verification_status": "VERIFIED",
-      "is_active": true,
-      "created_at": DateTime.now()
-          .subtract(const Duration(days: 120))
+      "verification_status": "APPROVED",
+      "joining_date": DateTime.now()
+          .subtract(const Duration(days: 180))
           .toIso8601String(),
+      "base_salary": 18000,
+      "is_active": true,
       "qualification_docs": ["GNM Certificate", "Nursing License"],
       "experience_docs": ["2 Years Experience Letter"],
       "signature": null,
     };
 
     return Scaffold(
-      backgroundColor: const Color(0xffF5F7FB),
-      body: CustomScrollView(
-        slivers: [
-          _ProfileHeader(data),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _SectionTitle("Basic Details"),
-                _InfoTile(
-                  Icons.person,
-                  "Full Name",
-                  data["full_name"].toString(),
-                ),
-                _InfoTile(Icons.phone, "Phone", data["phone"].toString()),
-                _InfoTile(
-                  Icons.medical_services,
-                  "Role",
-                  data["staff_type"].toString(),
-                ),
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(title: const Text("Profile"), elevation: 0),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _TopProfileCard(data),
+          const SizedBox(height: 16),
 
-                _SectionTitle("Verification"),
-                _StatusRow(
-                  "Aadhaar Verified",
-                  data["aadhaar_verified"] as bool,
-                ),
-                _StatusRow("Account Active", data["is_active"] as bool),
-                _InfoTile(
-                  Icons.verified,
-                  "Verification Status",
-                  data["verification_status"].toString(),
-                ),
+          _ActionCard(),
+          const SizedBox(height: 16),
 
-                _SectionTitle("Joined"),
-                _InfoTile(
-                  Icons.calendar_today,
-                  "Joined On",
-                  DateFormat(
-                    "dd MMM yyyy",
-                  ).format(DateTime.parse(data["created_at"].toString())),
-                ),
+          _DetailsCard(data),
+          const SizedBox(height: 16),
 
-                _SectionTitle("Documents"),
-                _DocList(
-                  "Qualification Documents",
-                  List<String>.from(data["qualification_docs"] as List<String>),
-                ),
-                _DocList(
-                  "Experience Documents",
-                  List<String>.from(data["experience_docs"] as List<String>),
-                ),
-
-                _SectionTitle("Signature"),
-                _SignatureBox(
-                  data["signature"].toString() == "null"
-                      ? null
-                      : data["signature"].toString(),
-                ),
-
-                const SizedBox(height: 40),
-              ]),
-            ),
+          _DocsCard(
+            "Qualification Documents",
+            (data["qualification_docs"] as List?)?.cast<String>() ?? [],
           ),
+          const SizedBox(height: 12),
+
+          _DocsCard(
+            "Experience Documents",
+            (data["experience_docs"] as List?)?.cast<String>() ?? [],
+          ),
+          const SizedBox(height: 16),
+
+          _SignatureCard(data["signature"].toString()),
+          const SizedBox(height: 30),
+
+          /// 🚪 LOGOUT BUTTON
+          _LogoutButton(),
         ],
       ),
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  const _SectionTitle(this.title);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-}
-
-class _ProfileHeader extends StatelessWidget {
+/// 👤 TOP PROFILE CARD
+class _TopProfileCard extends StatelessWidget {
   final Map data;
-  const _ProfileHeader(this.data);
+  const _TopProfileCard(this.data);
 
   @override
   Widget build(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 220,
-      pinned: true,
-      backgroundColor: Colors.transparent,
-      flexibleSpace: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xff4A6CF7), Color(0xff6A8DFF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppTheme.primary, AppTheme.secondary],
         ),
-        child: FlexibleSpaceBar(
-          titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-          title: Text(data["full_name"], style: const TextStyle(fontSize: 16)),
-          background: Padding(
-            padding: const EdgeInsets.only(top: 60),
-            child: Column(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primary.withOpacity(0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const CircleAvatar(
+              radius: 42,
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, size: 44, color: AppTheme.primary),
+            ),
+            const SizedBox(height: 12),
+
+            Text(
+              data["full_name"],
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            Chip(
+              label: Text(data["verification_status"]),
+              backgroundColor: Colors.white,
+              labelStyle: const TextStyle(
+                color: AppTheme.success,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                const CircleAvatar(
-                  radius: 42,
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.person, size: 48),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _Badge("VERIFIED", Colors.green),
-                    const SizedBox(width: 8),
-                    _Badge("ACTIVE", Colors.blue),
-                  ],
-                ),
+                _MiniInfo("Role", data["staff_type"]),
+                _MiniInfo("Phone", data["phone"]),
+                _MiniInfo("Salary", "₹${data["base_salary"]}"),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _InfoTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoTile(this.icon, this.label, this.value);
-
+/// 📥 ACTION CARD
+class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      color: AppTheme.primary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.blue.shade50,
-          child: Icon(icon, color: Colors.blue),
+        leading: const Icon(Icons.download, color: Colors.white),
+        title: const Text(
+          "Download Staff Records",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
-        title: Text(label),
-        subtitle: Text(value),
+        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
       ),
     );
   }
 }
 
-class _StatusRow extends StatelessWidget {
-  final String label;
-  final bool value;
-
-  const _StatusRow(this.label, this.value);
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ListTile(
-        title: Text(label),
-        trailing: Chip(
-          label: Text(value ? "YES" : "NO"),
-          backgroundColor: value ? Colors.green : Colors.red,
-        ),
-      ),
-    );
-  }
-}
-
-class _DocList extends StatelessWidget {
-  final String title;
-  final List docs;
-
-  const _DocList(this.title, this.docs);
+/// 📄 DETAILS CARD
+class _DetailsCard extends StatelessWidget {
+  final Map data;
+  const _DetailsCard(this.data);
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Staff Details",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const Divider(),
+
+            _DetailRow("Email", data["email"]),
+            _DetailRow("Aadhaar", data["aadhaar_no"]),
+            _DetailRow(
+              "Joining Date",
+              DateFormat(
+                "dd MMM yyyy",
+              ).format(DateTime.parse(data["joining_date"])),
+            ),
+            _DetailRow(
+              "Aadhaar Verified",
+              data["aadhaar_verified"] ? "Yes" : "No",
+            ),
+            _DetailRow(
+              "Account Status",
+              data["is_active"] ? "Active" : "Inactive",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 📁 DOCUMENTS
+class _DocsCard extends StatelessWidget {
+  final String title;
+  final List<String> docs;
+
+  const _DocsCard(this.title, this.docs);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -221,16 +216,18 @@ class _DocList extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             const Divider(),
+
+            if (docs.isEmpty)
+              const Text(
+                "No documents uploaded",
+                style: TextStyle(color: Colors.grey),
+              ),
+
             ...docs.map(
-              (d) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  children: const [
-                    Icon(Icons.picture_as_pdf, size: 18),
-                    SizedBox(width: 8),
-                    Expanded(child: Text("Document")),
-                  ],
-                ),
+              (d) => ListTile(
+                dense: true,
+                leading: const Icon(Icons.description, color: AppTheme.primary),
+                title: Text(d),
               ),
             ),
           ],
@@ -240,42 +237,133 @@ class _DocList extends StatelessWidget {
   }
 }
 
-class _SignatureBox extends StatelessWidget {
+/// ✍️ SIGNATURE
+class _SignatureCard extends StatelessWidget {
   final String? signature;
-  const _SignatureBox(this.signature);
+  const _SignatureCard(this.signature);
 
   @override
   Widget build(BuildContext context) {
+    final isValidUrl =
+        signature != null &&
+        signature!.isNotEmpty &&
+        signature != "null" &&
+        signature!.startsWith("http");
+
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Container(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: SizedBox(
         height: 100,
-        alignment: Alignment.center,
-        child: signature == null
-            ? const Text("No signature uploaded")
-            : Image.network(signature!),
+        child: Center(
+          child: isValidUrl
+              ? Image.network(
+                  signature!,
+                  errorBuilder: (_, __, ___) {
+                    return const Text(
+                      "Signature not available",
+                      style: TextStyle(color: Colors.grey),
+                    );
+                  },
+                )
+              : const Text(
+                  "No signature uploaded",
+                  style: TextStyle(color: Colors.grey),
+                ),
+        ),
       ),
     );
   }
 }
 
-class _Badge extends StatelessWidget {
-  final String text;
-  final Color color;
+/// 🚪 LOGOUT BUTTON WITH CONFIRMATION
+class _LogoutButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppTheme.danger,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      icon: const Icon(Icons.logout),
+      label: const Text("LOGOUT"),
+      onPressed: () => _confirmLogout(context),
+    );
+  }
 
-  const _Badge(this.text, this.color);
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.login,
+                (route) => false,
+              );
+            },
+            child: const Text("Logout"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 🔹 SMALL INFO
+class _MiniInfo extends StatelessWidget {
+  final String label;
+  final String value;
+  const _MiniInfo(this.label, this.value);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(color: color, fontWeight: FontWeight.bold),
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+        ),
+      ],
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _DetailRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }
