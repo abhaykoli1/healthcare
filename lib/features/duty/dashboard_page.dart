@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../routes/app_routes.dart';
 import 'dashboard_service.dart';
 
 import 'profile_header_section.dart';
@@ -26,80 +25,93 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(title: const Text("Dashboard"), centerTitle: true),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: dashboardFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      backgroundColor: const Color(0xffF5F7FB),
+      body: SafeArea(
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: dashboardFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError) {
-            return Center(child: Text(snapshot.error.toString()));
-          }
+            if (snapshot.hasError) {
+              return Center(child: Text(snapshot.error.toString()));
+            }
 
-          final data = snapshot.data!;
-          final nurse = data["nurse"];
-          final visits = data["today_visits"];
-          final weeklyHours = data["weekly_hours"];
+            final data = snapshot.data!;
+            final nurse = data["nurse"];
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 100, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// 👤 PROFILE HEADER
-                ProfileHeader(
-                  name: nurse["name"],
-                  ward: nurse["nurse_type"],
-                  status: nurse["status"],
-                  workedTime: nurse["worked_time"],
+            return CustomScrollView(
+              slivers: [
+                /// 🔷 HEADER
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: ProfileHeader(
+                      name: nurse["name"],
+                      ward: nurse["nurse_type"],
+                      status: nurse["status"],
+                      workedTime: nurse["worked_time"],
+                    ),
+                  ),
                 ),
-
-                const SizedBox(height: 28),
 
                 /// 📍 TODAY VISITS
-                SectionWrapper(
+                _Section(
                   title: "Today's Visits",
-                  child: ActiveVisitsSection(visits: visits),
+                  child: ActiveVisitsSection(
+                    visits: data["today_visits"],
+                  ),
                 ),
-
-                const SizedBox(height: 28),
 
                 /// 📊 WEEKLY GRAPH
-                SectionWrapper(
+                _Section(
                   title: "Weekly Work Hours",
-                  child: WeeklyWorkGraph(hours: weeklyHours),
+                  child: WeeklyWorkGraph(
+                    hours: data["weekly_hours"],
+                  ),
                 ),
 
-                const SizedBox(height: 28),
-
                 /// ⚡ ACTIONS
-                SectionWrapper(
+                _Section(
                   title: "Quick Actions",
                   child: ActionCardsSection(staffId: '',),
                 ),
+
+                const SliverToBoxAdapter(child: SizedBox(height: 30)),
               ],
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-/// 🔹 SECTION WRAPPER
-class SectionWrapper extends StatelessWidget {
+class _Section extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const SectionWrapper({super.key, required this.title, required this.child});
+  const _Section({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(padding: const EdgeInsets.all(10), child: child),
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                )),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
     );
   }
 }
