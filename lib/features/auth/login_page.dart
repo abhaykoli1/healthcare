@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:healthcare/features/auth/auth_service.dart';
 import '../../routes/app_routes.dart';
 import 'auth_provider.dart';
 
-class LoginPage extends ConsumerWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final phoneCtrl = TextEditingController();
-    final auth = ref.watch(authProvider);
+  State<LoginPage> createState() => _LoginPageState();
+}
 
+class _LoginPageState extends State<LoginPage> {
+  final phoneCtrl = TextEditingController();
+  bool loading = false;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: Padding(
@@ -43,12 +49,14 @@ class LoginPage extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: auth.loading
+                      onPressed: loading
                           ? null
                           : () async {
-                              await ref
-                                  .read(authProvider.notifier)
-                                  .sendOtp(phoneCtrl.text);
+                              setState(() => loading = true);
+
+                              await AuthService.sendOtp(phoneCtrl.text);
+
+                              setState(() => loading = false);
 
                               Navigator.pushNamed(
                                 context,
@@ -56,7 +64,7 @@ class LoginPage extends ConsumerWidget {
                                 arguments: phoneCtrl.text,
                               );
                             },
-                      child: auth.loading
+                      child: loading
                           ? const CircularProgressIndicator()
                           : const Text("SEND OTP"),
                     ),

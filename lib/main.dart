@@ -15,16 +15,13 @@ class HospitalApp extends StatelessWidget {
     return MaterialApp(
       title: 'Hospital Management',
       debugShowCheckedModeBanner: false,
-
-      // 🌞 Light Theme
       theme: AppTheme.lightTheme,
-
-      // 🌚 Dark Theme (ready for future)
-      darkTheme: AppTheme.lightTheme.copyWith(brightness: Brightness.dark),
-
+      darkTheme: AppTheme.lightTheme.copyWith(
+        brightness: Brightness.dark,
+      ),
       themeMode: ThemeMode.light,
 
-      initialRoute: AppRoutes.patientsList,
+      initialRoute: AppRoutes.root,
       routes: AppRoutes.routes,
     );
   }

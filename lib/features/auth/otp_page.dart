@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../routes/app_routes.dart';
-import 'auth_provider.dart';
+import 'auth_service.dart';
 
-class OtpPage extends ConsumerWidget {
+class OtpPage extends StatefulWidget {
   const OtpPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  State<OtpPage> createState() => _OtpPageState();
+}
+
+class _OtpPageState extends State<OtpPage> {
+  final otpCtrl = TextEditingController();
+  bool loading = false;
+
+  @override
+  Widget build(BuildContext context) {
     final phone = ModalRoute.of(context)!.settings.arguments as String;
-    final otpCtrl = TextEditingController();
-    final auth = ref.watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text("Verify OTP")),
@@ -35,20 +40,55 @@ class OtpPage extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: auth.loading
+                onPressed: loading
                     ? null
                     : () async {
-                        await ref
-                            .read(authProvider.notifier)
-                            .verifyOtp(phone, otpCtrl.text);
+                        if (otpCtrl.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Enter OTP"),
+                            ),
+                          );
+                          return;
+                        }
 
-                        Navigator.pushReplacementNamed(
-                          context,
-                          AppRoutes.dashboard,
-                        );
+                        setState(() => loading = true);
+
+                        try {
+                          await AuthService.verifyOtp(
+                            phone,
+                            otpCtrl.text,
+                          );
+
+                          if (!mounted) return;
+
+                          Navigator.pushReplacementNamed(
+                            context,
+                            AppRoutes.dashboard,
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                e.toString().replaceAll("Exception:", ""),
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        } finally {
+                          if (mounted) {
+                            setState(() => loading = false);
+                          }
+                        }
                       },
-                child: auth.loading
-                    ? const CircularProgressIndicator()
+                child: loading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text("VERIFY & LOGIN"),
               ),
             ),
