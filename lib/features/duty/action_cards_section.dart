@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:healthcare/features/duty/attendance.dart';
 import 'package:healthcare/features/duty/duty_service.dart';
 import '../../routes/app_routes.dart';
 
@@ -30,6 +32,14 @@ class ActionCardsSection extends StatelessWidget {
               title: "SOS",
               color: Colors.red,
               onTap: () => Navigator.pushNamed(context, AppRoutes.sos),
+            ),
+            _DashboardCard(
+              icon: Icons.calendar_month,
+              title: "Attendance",
+              color: Colors.green.shade200,
+              onTap: () {
+                Navigator.push(context, CupertinoPageRoute(builder: (context) => NurseAttendancePage()));
+              },
             ),
           ],
         ),

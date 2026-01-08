@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../core/network/api_client.dart';
+
 class VisitPage extends StatefulWidget {
   const VisitPage({super.key});
 
@@ -12,6 +16,10 @@ class _VisitPageState extends State<VisitPage> {
   List visits = [];
   bool loading = true;
 
+  DateTime selectedMonth = DateTime.now();
+  final DateTime currentMonth =
+      DateTime(DateTime.now().year, DateTime.now().month);
+
   @override
   void initState() {
     super.initState();
@@ -20,7 +28,10 @@ class _VisitPageState extends State<VisitPage> {
 
   Future<void> _loadVisits() async {
     try {
-      final res = await ApiClient.get("/nurse/visitsss");
+      setState(() => loading = true);
+
+      final monthStr = DateFormat("yyyy-MM").format(selectedMonth);
+      final res = await ApiClient.get("/nurse/visits?month=$monthStr");
 
       setState(() {
         visits = res ?? [];
@@ -28,52 +39,104 @@ class _VisitPageState extends State<VisitPage> {
       });
     } catch (e) {
       setState(() => loading = false);
-     
     }
   }
 
-  Future<void> _completeVisit(String visitId) async {
-    try {
-      await ApiClient.post("/nurse/visits/$visitId/complete", {});
-      _snack("Visit marked as completed");
-      _loadVisits();
-    } catch (e) {
-      _snack("Failed to complete visit");
-    }
+  void _changeMonth(int diff) {
+    final newMonth =
+        DateTime(selectedMonth.year, selectedMonth.month + diff);
+
+    // ❌ BLOCK FUTURE MONTH
+    if (newMonth.isAfter(currentMonth)) return;
+
+    setState(() => selectedMonth = newMonth);
+    _loadVisits();
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isCurrentMonth =
+        selectedMonth.year == currentMonth.year &&
+            selectedMonth.month == currentMonth.month;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Patient Visits"),
         centerTitle: true,
       ),
-
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-
-          /// 🔴 EMPTY STATE
-          : visits.isEmpty
-              ? _EmptyVisits(onRefresh: _loadVisits)
-
-              /// ✅ VISITS LIST
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: visits.length,
-                  itemBuilder: (context, index) {
-                    final v = visits[index];
-
-                    return _VisitCard(
-                      patientName: v["patient_name"] ?? "Unknown",
-                      address: v["address"] ?? "N/A",
-                      completed: v["completed"] ?? false,
-                      onComplete: () =>
-                          _completeVisit(v["visit_id"]),
-                    );
-                  },
+      body: Column(
+        children: [
+          /// 📅 MONTH SELECTOR
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () => _changeMonth(-1),
                 ),
+                Text(
+                  DateFormat("MMMM yyyy").format(selectedMonth),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.chevron_right,
+                    color: isCurrentMonth
+                        ? Colors.grey.shade400
+                        : Colors.black,
+                  ),
+                  onPressed:
+                      isCurrentMonth ? null : () => _changeMonth(1),
+                ),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: loading
+                ? const Center(child: CircularProgressIndicator())
+
+                /// 🔴 EMPTY STATE
+                : visits.isEmpty
+                    ? _EmptyVisits(onRefresh: _loadVisits)
+
+                    /// ✅ VISITS LIST
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: visits.length,
+                        itemBuilder: (context, index) {
+                          final v = visits[index];
+
+                          return _VisitCard(
+                            patientName:
+                                v["patient_name"] ?? "Unknown",
+                            address: v["address"] ?? "N/A",
+                            completed: v["completed"] ?? false,
+                            onComplete: () =>
+                                _completeVisit(v["visit_id"]),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _completeVisit(String visitId) async {
+    try {
+      await ApiClient.post(
+          "/nurse/visits/$visitId/complete", {});
+      _snack("Visit marked as completed");
+      _loadVisits();
+    } catch (_) {
+      _snack("Failed to complete visit");
+    }
   }
 
   void _snack(String msg) {
