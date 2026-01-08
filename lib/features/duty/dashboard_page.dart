@@ -75,7 +75,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 /// ⚡ ACTIONS
                 _Section(
                   title: "Quick Actions",
-                  child: ActionCardsSection(staffId: '',),
+                  child: ActionCardsSection(staffId: nurse['nurse_id']),
                 ),
 
                 const SliverToBoxAdapter(child: SizedBox(height: 30)),

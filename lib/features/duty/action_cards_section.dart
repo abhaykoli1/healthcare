@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:healthcare/features/duty/duty_service.dart';
 import '../../routes/app_routes.dart';
-import '../duty/punch_provider.dart';
 
 class ActionCardsSection extends StatelessWidget {
   final String staffId;
   const ActionCardsSection({super.key, required this.staffId});
 
-  //  PunchCard(staffId: staffId),
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PunchCard(staffId: staffId),
+        const PunchCard(),
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -41,17 +38,36 @@ class ActionCardsSection extends StatelessWidget {
   }
 }
 
-/// 🔥 SMART PUNCH CARD (Riverpod safe)
-class PunchCard extends ConsumerStatefulWidget {
-  final String staffId;
-  const PunchCard({super.key, required this.staffId});
+class PunchCard extends StatefulWidget {
+  const PunchCard({super.key});
 
   @override
-  ConsumerState<PunchCard> createState() => _PunchCardState();
+  State<PunchCard> createState() => _PunchCardState();
 }
 
-class _PunchCardState extends ConsumerState<PunchCard> {
-  bool isPunchedIn = false;
+class _PunchCardState extends State<PunchCard> {
+  bool canPunchIn = false;
+  bool canPunchOut = false;
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatus();
+  }
+
+  Future<void> _loadStatus() async {
+    try {
+      final status = await DutyService.getDutyStatus();
+      setState(() {
+        canPunchIn = status["can_punch_in"] ?? false;
+        canPunchOut = status["can_punch_out"] ?? false;
+        loading = false;
+      });
+    } catch (_) {
+      setState(() => loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,9 +75,8 @@ class _PunchCardState extends ConsumerState<PunchCard> {
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(14),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text(
               "Duty Attendance",
@@ -76,16 +91,9 @@ class _PunchCardState extends ConsumerState<PunchCard> {
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.login),
                     label: const Text("IN"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    onPressed: isPunchedIn
+                    onPressed: (!canPunchIn || loading)
                         ? null
-                        : () => _showPunchInDialog(context),
+                        : () => _handlePunch(inOut: true),
                   ),
                 ),
 
@@ -96,24 +104,9 @@ class _PunchCardState extends ConsumerState<PunchCard> {
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.logout),
                     label: const Text("OUT"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    onPressed: isPunchedIn
-                        ? () async {
-                            await ref
-                                .read(punchProvider)
-                                .outDuty(widget.staffId);
-
-                            setState(() => isPunchedIn = false);
-
-                            _snack("Punch Out successful");
-                          }
-                        : null,
+                    onPressed: (!canPunchOut || loading)
+                        ? null
+                        : () => _handlePunch(inOut: false),
                   ),
                 ),
               ],
@@ -124,78 +117,30 @@ class _PunchCardState extends ConsumerState<PunchCard> {
     );
   }
 
-  /// 🔔 Punch In Dialog
-  void _showPunchInDialog(BuildContext context) {
-    final now = DateTime.now();
+  /// 🔥 SIMPLE PUNCH FLOW (NO BIOMETRIC)
+  Future<void> _handlePunch({required bool inOut}) async {
+    try {
+      setState(() => loading = true);
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Confirm Punch In"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _InfoRow("Date", _fmtDate(now)),
-            _InfoRow("Time", _fmtTime(now)),
-            const SizedBox(height: 10),
-            const Text(
-              "Do you want to start duty now?",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
+      if (inOut) {
+        await DutyService.checkIn();
+      } else {
+        await DutyService.checkOut();
+      }
 
-              await ref
-                  .read(punchProvider)
-                  .inDuty(staffId: widget.staffId, location: "Hospital Ward A");
+      await _loadStatus();
 
-              setState(() => isPunchedIn = true);
-
-              _snack("Punch In successful");
-            },
-            child: const Text("CONFIRM"),
-          ),
-        ],
-      ),
-    );
+      _snack(inOut ? "Punch IN successful" : "Punch OUT successful");
+    } catch (e) {
+      _snack(e.toString());
+    } finally {
+      setState(() => loading = false);
+    }
   }
 
   void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  String _fmtDate(DateTime d) => "${d.day}/${d.month}/${d.year}";
-  String _fmtTime(DateTime d) =>
-      "${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}";
-}
-
-/// Helper Row
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _InfoRow(this.label, this.value);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
   }
 }
 
