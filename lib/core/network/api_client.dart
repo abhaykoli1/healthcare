@@ -37,7 +37,7 @@ class ApiClient {
       },
       body: jsonEncode(body),
     );
-
+    log(  res.body);
     _handleError(res);
     return jsonDecode(res.body);
   }
