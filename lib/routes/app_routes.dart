@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:healthcare/features/duty/register.dart';
 
 // CORE
 import '../core/bootstrap/splash_page.dart';
@@ -16,6 +17,8 @@ import '../features/staff/staff_apply_page.dart';
 import '../features/staff/staff_profile_page.dart';
 import '../features/duty/visit_page.dart';
 import '../features/sos/sos_page.dart';
+
+// 🔥 NURSE SELF SIGNUP
 
 class AppRoutes {
   // 🔐 ROOT
@@ -35,6 +38,9 @@ class AppRoutes {
   static const String visits = "/visits";
   static const String sos = "/sos";
 
+  // 🔥 NURSE
+  static const String nurseSignup = "/nurse-self-signup";
+
   static Map<String, WidgetBuilder> routes = {
     root: (_) => const SplashPage(),
 
@@ -51,5 +57,8 @@ class AppRoutes {
     profile: (_) => const StaffProfilePage(),
     visits: (_) => const VisitPage(),
     sos: (_) => const SOSPage(),
+
+    // 🔥 NURSE SELF SIGNUP
+    nurseSignup: (_) => const NurseSelfSignupPage(),
   };
 }

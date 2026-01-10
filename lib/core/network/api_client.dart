@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:healthcare/core/network/base.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
-
+import 'dart:io';
 class ApiClient {
   static const baseUrl = baseUrlApi;
 
@@ -52,5 +52,34 @@ class ApiClient {
         throw Exception("API Error (${res.statusCode})");
       }
     }
+  }
+}
+
+
+class FileUploadService {
+  static Future<String> uploadFile(
+    File file, {
+    String folder = "documents",
+  }) async {
+    final request = http.MultipartRequest(
+      "POST",
+      Uri.parse("$baseUrlApi/upload/file?folder=$folder"),
+    );
+
+    request.files.add(
+      await http.MultipartFile.fromPath("file", file.path),
+    );
+
+    final response = await request.send();
+    final body = await response.stream.bytesToString();
+
+    log(body);
+
+    if (response.statusCode != 200) {
+      throw Exception("File upload failed");
+    }
+
+    final data = jsonDecode(body);
+    return data["path"]; // 🔥 backend ka exact path
   }
 }
