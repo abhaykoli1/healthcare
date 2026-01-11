@@ -1,7 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
+import 'package:healthcare/core/storage/token_storage.dart';
 import 'package:healthcare/features/duty/consent_service.dart';
 import 'package:healthcare/features/duty/nurse_consent_page.dart';
+import 'package:healthcare/features/duty/nurse_profile.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'dashboard_service.dart';
 
@@ -12,7 +19,7 @@ import 'action_cards_section.dart';
 
 class ConsentService {
   static Future<Map<String, dynamic>> checkConsentStatus() async {
-    final res = await ApiClient.get("/consent/status");
+    final res = await ApiClient.get("/nurse/consent/status");
     return res;
   }
 
@@ -91,6 +98,37 @@ class _DashboardPageState extends State<DashboardPage> {
     ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Logout"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    /// 🔐 CLEAR TOKEN
+    await TokenStorage.clearToken();
+
+    if (!mounted) return;
+
+    /// 🚪 Redirect to Login
+    Navigator.pushNamedAndRemoveUntil(context, "/login", (route) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     /// 🔒 While consent is being checked
@@ -132,11 +170,16 @@ class _DashboardPageState extends State<DashboardPage> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: ProfileHeader(
-                        name: nurse["name"],
-                        ward: nurse["nurse_type"],
-                        status: nurse["status"],
-                        workedTime: nurse["worked_time"],
+                      child: GestureDetector(
+                        onTap: (){
+                          Navigator.push(context, CupertinoPageRoute(builder: (context) => NurseDetailPage()));
+                        },
+                        child: ProfileHeader(
+                          name: nurse["name"],
+                          ward: nurse["nurse_type"],
+                          status: nurse["status"],
+                          workedTime: nurse["worked_time"],
+                        ),
                       ),
                     ),
                   ),
@@ -161,7 +204,33 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: ActionCardsSection(staffId: nurse["nurse_id"]),
                   ),
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 30)),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _logout,
+                          icon: const Icon(Icons.logout, color: Colors.white),
+                          label: const Text(
+                            "Logout",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -201,66 +270,242 @@ class _Section extends StatelessWidget {
   }
 }
 
-class NurseConsentPage extends StatelessWidget {
+class NurseConsentPage extends StatefulWidget {
   final Map<String, dynamic> statusData;
 
   const NurseConsentPage({super.key, required this.statusData});
 
   @override
+  State<NurseConsentPage> createState() => _NurseConsentPageState();
+}
+
+class _NurseConsentPageState extends State<NurseConsentPage> {
+  File? signatureFile;
+  bool loading = false;
+
+  final ImagePicker _picker = ImagePicker();
+
+  bool get canSignConsent =>
+      widget.statusData["police_verified"] == "CLEAR" &&
+      widget.statusData["aadhaar_verified"] == true;
+
+  Future<void> pickSignature() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        signatureFile = File(picked.path);
+      });
+    }
+  }
+
+  Future<void> submitConsent() async {
+    if (signatureFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please upload your signature before submitting."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      loading = true;
+    });
+
+    try {
+      // Convert file to base64
+      final bytes = await signatureFile!.readAsBytes();
+      final base64Signature = "data:image/png;base64,${base64Encode(bytes)}";
+
+      final res = await ApiClient.post("/nurse/consent/sign", {
+        "confidentiality_accepted": true,
+        "no_direct_payment_accepted": true,
+        "police_termination_accepted": true,
+        "signature_image": base64Signature,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res["message"] ?? "Consent signed successfully!"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to sign consent: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final reason = statusData["reason"];
-    final policeStatus = statusData["police_verified"];
-    final aadhaarVerified = statusData["aadhaar_verified"] == true;
-
-    final canSignConsent = policeStatus == "CLEAR" && aadhaarVerified == true;
-
     return Scaffold(
-      appBar: AppBar(title: const Text("Complete Verification")),
-      body: Padding(
+      appBar: AppBar(
+        title: const Text("👩‍⚕️ Staff Legal Declaration & Undertaking"),
+        leading: Container(),
+      ),
+      backgroundColor: const Color(0xffF5F7FB),
+
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            /// 🔴 Police pending
-            if (policeStatus != "CLEAR")
-              _InfoCard(
-                icon: Icons.local_police,
-                text:
-                    "Please wait for the police and admin verification. "
-                    "You will be notified once it is completed.",
+            // ================= LEGAL DECLARATION =================
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      "1️⃣ Main declare karta/karti hoon ki mere sabhi documents genuine hain...",
+                      style: TextStyle(fontSize: 14.5, height: 1.5),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      "2️⃣ Main company ke sabhi rules – duty timing, transfer...",
+                      style: TextStyle(fontSize: 14.5, height: 1.5),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      "3️⃣ Patient ki medical information, photos, videos...",
+                      style: TextStyle(fontSize: 14.5, height: 1.5),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      "4️⃣ Bina company ki written permission ke kisi patient se direct payment...",
+                      style: TextStyle(fontSize: 14.5, height: 1.5),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      "5️⃣ Bina notice duty chhodna company ke financial loss ka karan...",
+                      style: TextStyle(fontSize: 14.5, height: 1.5),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      "6️⃣ Patient ke ghar par bidi, cigarette, gutka, alcohol ya drugs...",
+                      style: TextStyle(fontSize: 14.5, height: 1.5),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      "7️⃣ Patient / relatives ke saath misbehaviour, dhamki ya abuse...",
+                      style: TextStyle(fontSize: 14.5, height: 1.5),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      "8️⃣ Chori, cheating, fraud, ya company/patient ka nuksaan...",
+                      style: TextStyle(fontSize: 14.5, height: 1.5),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      "9️⃣ Company ke khilaf patient ko bhadkana, ya confidential info misuse...",
+                      style: TextStyle(fontSize: 14.5, height: 1.5),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      "🔟 Police verification fail hone par meri service bina notice terminate ki ja sakti hai.",
+                      style: TextStyle(fontSize: 14.5, height: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
-            /// 🔴 Aadhaar not verified
-            if (!aadhaarVerified)
-              _InfoCard(
-                icon: Icons.credit_card,
-                text:
-                    "Aadhaar verification is not completed yet. "
-                    "Please wait for admin verification.",
-              ),
+            const SizedBox(height: 20),
 
-            /// 🟡 Consent not signed (but allowed)
-            if (reason == "CONSENT_NOT_SIGNED" && canSignConsent)
-              _InfoCard(
-                icon: Icons.edit_document,
-                text:
-                    "Please review the consent details carefully and sign to continue.",
+            // ================= CONFIDENTIALITY =================
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: const Text(
+                  "🔒 CONFIDENTIALITY & DISCIPLINE\n\n"
+                  "Main patient & company data ko misuse nahi karunga/karungi. "
+                  "Violation par IT Act 2000 ke tahat action liya ja sakta hai.",
+                  style: TextStyle(fontSize: 14.5, height: 1.5),
+                ),
+              ),
+            ),
 
             const SizedBox(height: 24),
 
-            /// ✅ Show consent button ONLY when allowed
-            if (canSignConsent)
-              ElevatedButton(
-                onPressed: () async {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Still working on this feature..."),
-                    ),
-                  );
-                },
-                child: const Text("Sign Consent"),
+            // ================= SIGNATURE UPLOAD =================
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    const Text(
+                      "Upload your signature",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: pickSignature,
+                      child: Container(
+                        height: 150,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: signatureFile != null
+                            ? Image.file(signatureFile!, fit: BoxFit.contain)
+                            : const Center(
+                                child: Text(
+                                  "Tap to upload signature",
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: loading ? null : submitConsent,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 20,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: loading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              "Submit & Sign",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
           ],
         ),
       ),

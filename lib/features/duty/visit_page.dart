@@ -1,8 +1,6 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
-import '../../core/network/api_client.dart';
-
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:healthcare/routes/app_routes.dart';
 import '../../core/network/api_client.dart';
 
 class VisitPage extends StatefulWidget {
@@ -16,10 +14,6 @@ class _VisitPageState extends State<VisitPage> {
   List visits = [];
   bool loading = true;
 
-  DateTime selectedMonth = DateTime.now();
-  final DateTime currentMonth =
-      DateTime(DateTime.now().year, DateTime.now().month);
-
   @override
   void initState() {
     super.initState();
@@ -29,167 +23,56 @@ class _VisitPageState extends State<VisitPage> {
   Future<void> _loadVisits() async {
     try {
       setState(() => loading = true);
-
-      final monthStr = DateFormat("yyyy-MM").format(selectedMonth);
-      final res = await ApiClient.get("/nurse/visits?month=$monthStr");
-
-      setState(() {
-        visits = res ?? [];
-        loading = false;
-      });
+      final res = await ApiClient.get("/nurse/nurse/visits");
+      visits = res ?? [];
     } catch (e) {
-      setState(() => loading = false);
+      log(e.toString());
     }
+    setState(() => loading = false);
   }
 
-  void _changeMonth(int diff) {
-    final newMonth =
-        DateTime(selectedMonth.year, selectedMonth.month + diff);
-
-    // ❌ BLOCK FUTURE MONTH
-    if (newMonth.isAfter(currentMonth)) return;
-
-    setState(() => selectedMonth = newMonth);
-    _loadVisits();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isCurrentMonth =
-        selectedMonth.year == currentMonth.year &&
-            selectedMonth.month == currentMonth.month;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Patient Visits"),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          /// 📅 MONTH SELECTOR
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () => _changeMonth(-1),
-                ),
-                Text(
-                  DateFormat("MMMM yyyy").format(selectedMonth),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.chevron_right,
-                    color: isCurrentMonth
-                        ? Colors.grey.shade400
-                        : Colors.black,
-                  ),
-                  onPressed:
-                      isCurrentMonth ? null : () => _changeMonth(1),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: loading
-                ? const Center(child: CircularProgressIndicator())
-
-                /// 🔴 EMPTY STATE
-                : visits.isEmpty
-                    ? _EmptyVisits(onRefresh: _loadVisits)
-
-                    /// ✅ VISITS LIST
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: visits.length,
-                        itemBuilder: (context, index) {
-                          final v = visits[index];
-
-                          return _VisitCard(
-                            patientName:
-                                v["patient_name"] ?? "Unknown",
-                            address: v["address"] ?? "N/A",
-                            completed: v["completed"] ?? false,
-                            onComplete: () =>
-                                _completeVisit(v["visit_id"]),
-                          );
-                        },
-                      ),
-          ),
-        ],
+  void _openCompleteDialog(Map visit) async {
+    final result = await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _CompleteVisitDialog(
+        visitId: visit["visit_id"],
+        patientId: visit["patient_id"],
       ),
     );
-  }
 
-  Future<void> _completeVisit(String visitId) async {
-    try {
-      await ApiClient.post(
-          "/nurse/visits/$visitId/complete", {});
-      _snack("Visit marked as completed");
+    if (result == true) {
+      _snack("Visit completed successfully");
       _loadVisits();
-    } catch (_) {
-      _snack("Failed to complete visit");
     }
   }
 
   void _snack(String msg) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
-}
-
-/// ================= EMPTY STATE =================
-
-class _EmptyVisits extends StatelessWidget {
-  final VoidCallback onRefresh;
-  const _EmptyVisits({required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.event_busy_rounded,
-              size: 90,
-              color: Colors.grey.shade400,
+    return Scaffold(
+      appBar: AppBar(title: const Text("Patient Visits")),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : visits.isEmpty
+          ? const Center(child: Text("No visits available"))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: visits.length,
+              itemBuilder: (context, index) {
+                final v = visits[index];
+                return _VisitCard(
+                  visit: v,
+                  onComplete: () => _openCompleteDialog(v),
+                  onSOS: () {
+                    Navigator.pushNamed(context, AppRoutes.sos);
+                  },
+                );
+              },
             ),
-            const SizedBox(height: 20),
-            const Text(
-              "Visit Not Available Now",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              "You currently have no assigned patient visits.\nPlease check again later.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.refresh),
-              label: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: const Text("Refresh"),
-              ),
-              onPressed: onRefresh,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -197,37 +80,36 @@ class _EmptyVisits extends StatelessWidget {
 /// ================= VISIT CARD =================
 
 class _VisitCard extends StatelessWidget {
-  final String patientName;
-  final String address;
-  final bool completed;
+  final Map visit;
   final VoidCallback onComplete;
+  final VoidCallback onSOS;
 
   const _VisitCard({
-    required this.patientName,
-    required this.address,
-    required this.completed,
+    required this.visit,
     required this.onComplete,
+    required this.onSOS,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool completed = visit["completed"] == true;
+    final List meds = visit["medications"] ?? [];
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 👤 NAME + STATUS
+            /// NAME + STATUS
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  patientName,
+                  visit["patient_name"] ?? "Unknown",
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
@@ -237,35 +119,238 @@ class _VisitCard extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
 
-            /// 📍 ADDRESS
+            /// ADDRESS
             Row(
               children: [
-                const Icon(Icons.location_on,
-                    size: 18, color: Colors.grey),
+                const Icon(Icons.location_on, size: 16, color: Colors.grey),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    address,
+                    visit["address"] ?? "",
                     style: const TextStyle(color: Colors.grey),
                   ),
                 ),
               ],
             ),
 
-            if (!completed) ...[
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text("Mark as Completed"),
-                  onPressed: onComplete,
-                ),
+            const SizedBox(height: 8),
+
+            /// WARD / ROOM
+            Text(
+              "Ward: ${visit["ward"] ?? "-"} | Room: ${visit["room_no"] ?? "-"}",
+              style: const TextStyle(fontSize: 13),
+            ),
+
+            const Divider(height: 24),
+
+            /// MEDICATIONS
+            if (meds.isNotEmpty) ...[
+              const Text(
+                "Medicines",
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
+              const SizedBox(height: 8),
+              ...meds.map((m) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        m["medicine_name"],
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text("Dosage: ${m["dosage"]}"),
+                      Text("Timing: ${(m["timing"] as List).join(", ")}"),
+                      Text("Duration: ${m["duration_days"]} days"),
+                    ],
+                  ),
+                );
+              }).toList(),
             ],
+
+            const SizedBox(height: 12),
+
+            /// BUTTONS
+            Row(
+              children: [
+                if (!completed)
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text("Complete"),
+                      onPressed: onComplete,
+                    ),
+                  ),
+                if (!completed) const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                    icon: const Icon(Icons.warning_amber),
+                    label: const Text("SOS"),
+                    onPressed: onSOS,
+                  ),
+                ),
+              ],
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// ================= COMPLETE VISIT DIALOG =================
+
+class _CompleteVisitDialog extends StatefulWidget {
+  final String visitId;
+  final String patientId;
+
+  const _CompleteVisitDialog({required this.visitId, required this.patientId});
+
+  @override
+  State<_CompleteVisitDialog> createState() => _CompleteVisitDialogState();
+}
+
+class _CompleteVisitDialogState extends State<_CompleteVisitDialog> {
+  final _formKey = GlobalKey<FormState>();
+
+  final noteCtrl = TextEditingController();
+  final bpCtrl = TextEditingController();
+  final pulseCtrl = TextEditingController();
+  final spo2Ctrl = TextEditingController();
+  final tempCtrl = TextEditingController();
+  final sugarCtrl = TextEditingController();
+
+  bool loading = false;
+  bool consentAccepted = false;
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => loading = true);
+
+    try {
+      await ApiClient.post("/nurse/patients/${widget.patientId}/notes", {
+        "note": noteCtrl.text,
+      });
+
+      await ApiClient.post("/nurse/patients/${widget.patientId}/vitals", {
+        "bp": bpCtrl.text,
+        "pulse": int.parse(pulseCtrl.text),
+        "spo2": int.parse(spo2Ctrl.text),
+        "temperature": double.parse(tempCtrl.text),
+        "sugar": sugarCtrl.text.isEmpty ? null : double.parse(sugarCtrl.text),
+      });
+
+      await ApiClient.post("/nurse/visits/${widget.visitId}/complete", {});
+
+      Navigator.pop(context, true);
+    } catch (_) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Failed to submit")));
+    }
+
+    setState(() => loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const Text(
+                  "Complete Visit",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+
+                _input("Daily Note", noteCtrl, max: 3),
+                _input("BP (120/80)", bpCtrl),
+                _input("Pulse", pulseCtrl, number: true),
+                _input("SpO2", spo2Ctrl, number: true),
+                _input("Temperature", tempCtrl, number: true),
+                _input(
+                  "Sugar (optional)",
+                  sugarCtrl,
+                  number: true,
+                  required: false,
+                ),
+
+                const SizedBox(height: 10),
+
+                /// CONSENT
+                Row(
+                  children: [
+                    Checkbox(
+                      value: consentAccepted,
+                      onChanged: (v) {
+                        setState(() => consentAccepted = v ?? false);
+                      },
+                    ),
+                    const Expanded(
+                      child: Text(
+                        "I confirm that I have visited the patient and entered correct information",
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: loading || !consentAccepted ? null : _submit,
+                    child: loading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Submit & Complete"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _input(
+    String label,
+    TextEditingController ctrl, {
+    bool number = false,
+    bool required = true,
+    int max = 1,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: ctrl,
+        maxLines: max,
+        keyboardType: number ? TextInputType.number : TextInputType.text,
+        validator: required
+            ? (v) => v == null || v.isEmpty ? "Required" : null
+            : null,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
@@ -281,7 +366,6 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = completed ? Colors.green : Colors.orange;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
