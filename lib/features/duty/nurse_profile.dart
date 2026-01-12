@@ -56,6 +56,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
+              color: Theme.of(context).colorScheme.secondary,
               elevation: 3,
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -76,6 +77,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
+                              // color: Colors.white,
                             ),
                           ),
                           Text("${nurse['nurse_type']} Nurse"),

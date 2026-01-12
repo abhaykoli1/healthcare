@@ -109,6 +109,7 @@ class _DashboardPageState extends State<DashboardPage> {
             onPressed: () => Navigator.pop(context, false),
             child: const Text("Cancel"),
           ),
+
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
             onPressed: () => Navigator.pop(context, true),
@@ -171,8 +172,13 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: GestureDetector(
-                        onTap: (){
-                          Navigator.push(context, CupertinoPageRoute(builder: (context) => NurseDetailPage()));
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            CupertinoPageRoute(
+                              builder: (context) => NurseDetailPage(),
+                            ),
+                          );
                         },
                         child: ProfileHeader(
                           name: nurse["name"],

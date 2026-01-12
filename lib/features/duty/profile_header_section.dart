@@ -22,8 +22,11 @@ class ProfileHeader extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26),
-        gradient: const LinearGradient(
-          colors: [Color(0xff4A6CF7), Color(0xff6A8DFF)],
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.secondary,
+            Theme.of(context).colorScheme.secondary,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -57,17 +60,21 @@ class ProfileHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
 
                 const SizedBox(height: 4),
 
-                Text("Ward • $ward",
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 13)),
+                Text(
+                  "Ward • $ward",
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
 
                 const SizedBox(height: 14),
 
@@ -75,8 +82,7 @@ class ProfileHeader extends StatelessWidget {
                   children: [
                     _Pill(
                       label: status,
-                      color:
-                          active ? Colors.greenAccent : Colors.orangeAccent,
+                      color: active ? Colors.greenAccent : Colors.orangeAccent,
                     ),
                     const SizedBox(width: 8),
                     _Pill(
@@ -114,12 +120,14 @@ class _Pill extends StatelessWidget {
         color: darkText ? Colors.white : color.withOpacity(0.25),
         borderRadius: BorderRadius.circular(30),
       ),
-      child: Text(label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: darkText ? Colors.black : color,
-          )),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: darkText ? Colors.black : color,
+        ),
+      ),
     );
   }
 }
