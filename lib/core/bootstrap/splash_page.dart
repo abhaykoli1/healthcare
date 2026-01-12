@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/features/doctor/doctor_home.dart';
+import 'package:healthcare/features/pataint/patain.profile.dart';
+import 'package:healthcare/features/staff/staff_profile_complaints_page.dart';
 import '../../core/storage/token_storage.dart';
 import '../../routes/app_routes.dart';
 
@@ -29,6 +31,10 @@ class _SplashPageState extends State<SplashPage> {
         Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const DoctorProfilePage()));
       } else if (role == "NURSE") {
         Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+      }else if(role == "PATIENT"){
+        Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const PataintProfilePage()));
+      }else{
+        Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const StaffProfileComplaintsPage()));
       }
     } else {
       Navigator.pushReplacementNamed(context, AppRoutes.login);

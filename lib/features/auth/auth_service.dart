@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/base.dart';
 import 'package:healthcare/features/doctor/doctor_home.dart';
+import 'package:healthcare/features/pataint/patain.profile.dart';
+import 'package:healthcare/features/staff/staff_profile_complaints_page.dart';
 import 'package:healthcare/routes/app_routes.dart';
 import 'package:http/http.dart' as http;
 import '../../core/storage/token_storage.dart';
@@ -62,6 +64,10 @@ class AuthService {
       Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const DoctorProfilePage()));
     } else if (data["role"] == "NURSE") {
       Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+    } else if(data["role"] == "PATIENT"){
+      Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const PataintProfilePage()));
+    } else if(data["role"] == "STAFF"){
+      Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => StaffProfileComplaintsPage()), );
     }
   }
 }
