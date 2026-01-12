@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 class AppTheme {
   // 🔵 Core Brand Colors (Swap-style)
   static const primary = Color(0xffa0c149);
+  static const primarylight = Color(0xffE6F2C6);
+
   static const primarySoft = Color(0xffEEF2FF);
   static const secondary = Color(0xff1d2356);
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 
 class ProfileHeader extends StatelessWidget {
   final String name;
@@ -23,20 +24,17 @@ class ProfileHeader extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26),
         gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.secondary,
-            Theme.of(context).colorScheme.secondary,
-          ],
+          colors: [AppTheme.primary, AppTheme.primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: Colors.blue.withOpacity(0.25),
+        //     blurRadius: 24,
+        //     offset: const Offset(0, 12),
+        //   ),
+        // ],
       ),
       child: Row(
         children: [
@@ -82,7 +80,7 @@ class ProfileHeader extends StatelessWidget {
                   children: [
                     _Pill(
                       label: status,
-                      color: active ? Colors.greenAccent : Colors.orangeAccent,
+                      color: active ? Colors.greenAccent : Colors.red,
                     ),
                     const SizedBox(width: 8),
                     _Pill(

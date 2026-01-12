@@ -21,8 +21,7 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
   }
 
   Future<void> _load() async {
-    final res =
-        await ApiClient.get("/nurse/patients/${widget.patientId}");
+    final res = await ApiClient.get("/nurse/patients/${widget.patientId}");
     setState(() {
       data = jsonDecode(res.body);
       loading = false;
@@ -43,11 +42,11 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Card(
+              color: Theme.of(context).colorScheme.secondary,
               child: ListTile(
                 leading: const Icon(Icons.person),
                 title: Text(data!["name"]),
-                subtitle:
-                    Text("${data!["age"]} yrs • ${data!["gender"]}"),
+                subtitle: Text("${data!["age"]} yrs • ${data!["gender"]}"),
               ),
             ),
           ],

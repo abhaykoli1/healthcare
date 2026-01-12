@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 import '../../core/network/api_client.dart';
 
 class NurseDetailPage extends StatefulWidget {
@@ -46,6 +47,8 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
     final visits = data!['recent_visits'];
 
     return Scaffold(
+      backgroundColor: AppTheme.primarylight,
+
       appBar: AppBar(title: Text(nurse['phone'] ?? "Nurse Details")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -56,7 +59,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
-              color: Theme.of(context).colorScheme.secondary,
+              color: AppTheme.primary.withOpacity(.8),
               elevation: 3,
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -67,6 +70,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
                         radius: 45,
                         backgroundImage: NetworkImage(nurse['profile_photo']),
                       ),
+
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
@@ -77,28 +81,33 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              // color: Colors.white,
+                              color: Colors.white,
                             ),
                           ),
                           Text("${nurse['nurse_type']} Nurse"),
                           const SizedBox(height: 8),
                           Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
+                            spacing: 4,
+                            runSpacing: 0,
                             children: [
                               if (nurse['aadhaar_verified'] == true)
                                 Chip(
-                                  label: const Text("Aadhaar Verified"),
+                                  label: Text(
+                                    "Aadhaar Verified",
+                                    style: TextStyle(color: Colors.black),
+                                  ),
                                   backgroundColor: Colors.green.shade100,
                                 ),
                               Chip(
                                 label: Text(
+                                  style: TextStyle(color: Colors.black),
                                   nurse['verification_status'] ?? "N/A",
                                 ),
                                 backgroundColor: Colors.orange.shade100,
                               ),
                               Chip(
                                 label: Text(
+                                  style: TextStyle(color: Colors.black),
                                   nurse['police_verification_status'] ?? "N/A",
                                 ),
                                 backgroundColor: Colors.blue.shade100,
@@ -199,56 +208,127 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
   }
 
   // ================= KPI SECTION =================
+  // Widget _buildKpiSection(Map kpi) {
+  //   return Wrap(
+  //     spacing: 12,
+  //     runSpacing: 12,
+  //     children: [
+  //       _kpiCard("Attendance", "${kpi['attendance']} Days"),
+  //       _kpiCard(
+  //         "Salary",
+  //         "₹ ${kpi['salary'] ?? 'N/A'}",
+  //         extra: kpi['salary_paid'] != null
+  //             ? (kpi['salary_paid'] ? "Paid" : "Unpaid")
+  //             : null,
+  //       ),
+  //       _kpiCard(
+  //         "Active Duty",
+  //         kpi['active_duty'] ?? "N/A",
+  //         extra: kpi['shift'],
+  //       ),
+  //       _kpiCard(
+  //         "Consent Status",
+  //         kpi['consent_status'] ?? "N/A",
+  //         extra: kpi['consent_version'] != null
+  //             ? "Version ${kpi['consent_version']}"
+  //             : null,
+  //       ),
+  //     ],
+  //   );
+  // }
+
   Widget _buildKpiSection(Map kpi) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _kpiCard("Attendance", "${kpi['attendance']} Days"),
-        _kpiCard(
-          "Salary",
-          "₹ ${kpi['salary'] ?? 'N/A'}",
-          extra: kpi['salary_paid'] != null
-              ? (kpi['salary_paid'] ? "Paid" : "Unpaid")
-              : null,
-        ),
-        _kpiCard(
-          "Active Duty",
-          kpi['active_duty'] ?? "N/A",
-          extra: kpi['shift'],
-        ),
-        _kpiCard(
-          "Consent Status",
-          kpi['consent_status'] ?? "N/A",
-          extra: kpi['consent_version'] != null
-              ? "Version ${kpi['consent_version']}"
-              : null,
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = (constraints.maxWidth - 12) / 2;
+
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            SizedBox(
+              width: width,
+              child: _kpiCard("Attendance", "${kpi['attendance']} Days"),
+            ),
+            SizedBox(
+              width: width,
+              child: _kpiCard("Salary", "₹ ${kpi['salary'] ?? 'N/A'}"),
+            ),
+            SizedBox(
+              width: width,
+              child: _kpiCard(
+                "Active Duty",
+                kpi['active_duty'] ?? "N/A",
+                extra: kpi['shift'],
+              ),
+            ),
+            SizedBox(
+              width: width,
+              child: _kpiCard(
+                "Consent Status",
+                kpi['consent_status'] ?? "N/A",
+                extra: kpi['consent_version'] != null
+                    ? "Version ${kpi['consent_version']}"
+                    : null,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _kpiCard(String title, String value, {String? extra}) => Container(
-    width: 160,
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
+  // Widget _kpiCard(String title, String value, {String? extra}) => Container(
+  //   // width: 100%,
+  //   padding: const EdgeInsets.all(12),
+  //   decoration: BoxDecoration(
+  //     borderRadius: BorderRadius.circular(12),
+  //     color: Colors.grey.shade200,
+  //   ),
+  //   child: Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+  //       const SizedBox(height: 6),
+  //       Text(
+  //         value,
+  //         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+  //       ),
+  //       if (extra != null)
+  //         Text(extra, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+  //     ],
+  //   ),
+  // );
+  Widget _kpiCard(String title, String value, {String? extra}) {
+    return Material(
+      elevation: 3, // 👈 yahin elevation
       borderRadius: BorderRadius.circular(12),
-      color: Colors.grey.shade200,
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      // color: Colors.grey.shade200,
+      shadowColor: Colors.black.withOpacity(0.2),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            if (extra != null)
+              Text(
+                extra,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+          ],
         ),
-        if (extra != null)
-          Text(extra, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 
   // ================= ATTENDANCE GRAPH SECTION =================
   Widget _buildAttendanceGraphSection(Map graph) {
@@ -256,7 +336,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
         (graph['values'] as List).fold(0, (a, b) => a > b ? a : b).toDouble() +
         1;
     return Card(
-      elevation: 3,
+      elevation: .5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -308,8 +388,8 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
   // ================= GENERIC SECTION CARD =================
   Widget _buildSectionCard(String title, List<Widget> children) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 3,
+      // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: .5,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

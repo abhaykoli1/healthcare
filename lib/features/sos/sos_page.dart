@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/features/duty/nurse_service.dart';
 import 'package:healthcare/features/sos/patient_search_delegate.dart';
 import 'package:healthcare/features/sos/sos_service.dart';
-
 
 class SOSPage extends StatefulWidget {
   const SOSPage({super.key});
@@ -42,6 +42,7 @@ class _SOSPageState extends State<SOSPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.primarylight,
       appBar: AppBar(
         title: const Text("Emergency SOS"),
         centerTitle: true,
@@ -61,8 +62,11 @@ class _SOSPageState extends State<SOSPage> {
                 padding: EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: Colors.red, size: 36),
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.red,
+                      size: 36,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
