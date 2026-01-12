@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/features/duty/consent_service.dart';
 import 'package:healthcare/features/duty/nurse_consent_page.dart';
 import 'package:healthcare/features/duty/nurse_profile.dart';
@@ -138,7 +139,7 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xffF5F7FB),
+      backgroundColor: AppTheme.primary,
       body: SafeArea(
         child: FutureBuilder<Map<String, dynamic>>(
           future: _dashboardFuture,
