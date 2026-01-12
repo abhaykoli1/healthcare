@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 import '../../core/network/api_client.dart';
 
@@ -31,12 +32,10 @@ class _NurseAttendancePageState extends State<NurseAttendancePage> {
     try {
       final monthStr = DateFormat("yyyy-MM").format(selectedMonth);
 
-      final res =
-          await ApiClient.get("/nurse/attendance?month=$monthStr");
+      final res = await ApiClient.get("/nurse/attendance?month=$monthStr");
 
       setState(() {
-        attendance =
-            List<Map<String, dynamic>>.from(res["attendance"] ?? []);
+        attendance = List<Map<String, dynamic>>.from(res["attendance"] ?? []);
 
         present = res["summary"]["present"] ?? 0;
         absent = res["summary"]["absent"] ?? 0;
@@ -53,8 +52,7 @@ class _NurseAttendancePageState extends State<NurseAttendancePage> {
 
   void _changeMonth(int diff) {
     setState(() {
-      selectedMonth =
-          DateTime(selectedMonth.year, selectedMonth.month + diff);
+      selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + diff);
     });
     _loadAttendance();
   }
@@ -62,10 +60,8 @@ class _NurseAttendancePageState extends State<NurseAttendancePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("My Attendance"),
-        centerTitle: true,
-      ),
+      backgroundColor: AppTheme.primarylight,
+      appBar: AppBar(title: const Text("My Attendance"), centerTitle: true),
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
@@ -128,8 +124,7 @@ class _NurseAttendancePageState extends State<NurseAttendancePage> {
   }
 
   void _snack(String msg) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 }
 
@@ -158,10 +153,16 @@ class _EmptyAttendance extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            icon: const Icon(Icons.refresh),
-            label: const Text("Refresh"),
             onPressed: onRefresh,
-          )
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text("Refresh"),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -186,21 +187,12 @@ class _MonthSelector extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left),
-          onPressed: onPrev,
-        ),
+        IconButton(icon: const Icon(Icons.chevron_left), onPressed: onPrev),
         Text(
           DateFormat("MMMM yyyy").format(month),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        IconButton(
-          icon: const Icon(Icons.chevron_right),
-          onPressed: onNext,
-        ),
+        IconButton(icon: const Icon(Icons.chevron_right), onPressed: onNext),
       ],
     );
   }
@@ -241,10 +233,7 @@ class _SummaryCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               title,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: color, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -259,10 +248,7 @@ class _AttendanceTile extends StatelessWidget {
   final int day;
   final String status;
 
-  const _AttendanceTile({
-    required this.day,
-    required this.status,
-  });
+  const _AttendanceTile({required this.day, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -285,9 +271,7 @@ class _AttendanceTile extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: color.withOpacity(0.15),
@@ -299,10 +283,7 @@ class _AttendanceTile extends StatelessWidget {
         ),
         trailing: Text(
           status,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: color, fontWeight: FontWeight.bold),
         ),
       ),
     );

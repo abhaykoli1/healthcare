@@ -139,7 +139,7 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.primary,
+      backgroundColor: AppTheme.primarylight,
       body: SafeArea(
         child: FutureBuilder<Map<String, dynamic>>(
           future: _dashboardFuture,

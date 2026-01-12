@@ -13,13 +13,16 @@ class ActionCardsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const PunchCard(),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12.0),
+          child: PunchCard(),
+        ),
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+          crossAxisSpacing: 11,
+          mainAxisSpacing: 11,
           children: [
             _DashboardCard(
               icon: Icons.assignment,
@@ -38,7 +41,12 @@ class ActionCardsSection extends StatelessWidget {
               title: "Attendance",
               color: Colors.green.shade200,
               onTap: () {
-                Navigator.push(context, CupertinoPageRoute(builder: (context) => NurseAttendancePage()));
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => NurseAttendancePage(),
+                  ),
+                );
               },
             ),
           ],
@@ -82,7 +90,7 @@ class _PunchCardState extends State<PunchCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 8,
+      elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -149,8 +157,7 @@ class _PunchCardState extends State<PunchCard> {
   }
 
   void _snack(String msg) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 }
 

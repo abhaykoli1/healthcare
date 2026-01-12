@@ -55,7 +55,7 @@ class _VisitPageState extends State<VisitPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.primary,
+      backgroundColor: AppTheme.primarylight,
       appBar: AppBar(title: const Text("Patient Visits")),
       body: loading
           ? const Center(child: CircularProgressIndicator())
@@ -99,7 +99,7 @@ class _VisitCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 4,
+      elevation: .5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(16),

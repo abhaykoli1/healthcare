@@ -59,7 +59,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
-              color: AppTheme.primary,
+              color: AppTheme.primary.withOpacity(.8),
               elevation: 3,
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -303,7 +303,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
     return Material(
       elevation: 3, // 👈 yahin elevation
       borderRadius: BorderRadius.circular(12),
-      color: Colors.grey.shade200,
+      // color: Colors.grey.shade200,
       shadowColor: Colors.black.withOpacity(0.2),
       child: Container(
         padding: const EdgeInsets.all(12),
