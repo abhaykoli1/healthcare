@@ -123,6 +123,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     /// 🔐 CLEAR TOKEN
     await TokenStorage.clearToken();
+    await TokenStorage.clearRole();
 
     if (!mounted) return;
 

@@ -58,14 +58,12 @@ class _OtpPageState extends State<OtpPage> {
                           await AuthService.verifyOtp(
                             phone,
                             otpCtrl.text,
+                            context
                           );
 
                           if (!mounted) return;
-
-                          Navigator.pushReplacementNamed(
-                            context,
-                            AppRoutes.dashboard,
-                          );
+                          
+                          
                         } catch (e) {
                           if (!mounted) return;
 

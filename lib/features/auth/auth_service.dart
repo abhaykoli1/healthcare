@@ -1,5 +1,10 @@
 import 'dart:convert';
+import 'dart:developer';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/base.dart';
+import 'package:healthcare/features/doctor/doctor_home.dart';
+import 'package:healthcare/routes/app_routes.dart';
 import 'package:http/http.dart' as http;
 import '../../core/storage/token_storage.dart';
 
@@ -19,14 +24,11 @@ class AuthService {
     }
   }
 
-  static Future<void> verifyOtp(String phone, String otp) async {
+  static Future<void> verifyOtp(String phone, String otp, context) async {
     final res = await http.post(
       Uri.parse("$baseUrl/auth/verify-otp"),
       headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "phone": phone,
-        "otp": otp,
-      }),
+      body: jsonEncode({"phone": phone, "otp": otp}),
     );
 
     /// ❌ ERROR RESPONSE
@@ -45,11 +47,21 @@ class AuthService {
 
     /// ✅ SUCCESS
     final data = jsonDecode(res.body);
-
+    log(data.toString());
     if (!data.containsKey("access_token")) {
       throw Exception("Invalid server response");
     }
 
     await TokenStorage.saveToken(data["access_token"]);
+    await TokenStorage.saveRole(data["role"]);
+
+    if (data["role"] == null) {
+      throw Exception("User role not found");
+    }
+    if (data["role"] == "DOCTOR") {
+      Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const DoctorProfilePage()));
+    } else if (data["role"] == "NURSE") {
+      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+    }
   }
 }
