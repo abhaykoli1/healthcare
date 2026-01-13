@@ -1,8 +1,10 @@
+import 'dart:developer';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/features/doctor/doctor_prescribe.dart';
-import 'package:intl/intl.dart';
+
 
 class PatientDetailPage extends StatefulWidget {
   final String patientId;
@@ -18,6 +20,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
   @override
   void initState() {
     super.initState();
+    log(widget.patientId);
     future = ApiClient.get("/patient/${widget.patientId}/view");
   }
 
