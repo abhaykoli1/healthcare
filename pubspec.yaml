@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -39,23 +42,24 @@ dependencies:
   local_auth: ^3.0.0
   permission_handler: ^12.0.1
   image_picker: ^1.2.1
-  intl: ^0.20.2
+  flutter_riverpod: ^3.2.0
+  file_picker: ^8.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   # State management
-  flutter_riverpod: ^2.5.1
+  geolocator: ^14.0.2
+  flutter_background_service: ^5.0.1
 
   # Charts & Graphs
-  fl_chart: ^0.66.2
+  fl_chart: ^1.1.1
 
   # HTTP API calls
 
   # JSON & utilities
 
   # File picker (for documents, photos, signature)
-  file_picker: ^8.0.3
 
   # Image picker (camera/gallery)
 
@@ -67,7 +71,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -79,6 +83,8 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  assets:
+    - assets/media/
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

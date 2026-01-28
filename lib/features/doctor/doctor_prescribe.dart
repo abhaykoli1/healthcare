@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 
 class PrescribeMedicinePage extends StatefulWidget {
   final String patientId;
 
-  const PrescribeMedicinePage({
-    super.key,
-    required this.patientId,
-  });
+  const PrescribeMedicinePage({super.key, required this.patientId});
 
   @override
-  State<PrescribeMedicinePage> createState() =>
-      _PrescribeMedicinePageState();
+  State<PrescribeMedicinePage> createState() => _PrescribeMedicinePageState();
 }
 
 class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
@@ -19,14 +16,10 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
   List<Map<String, dynamic>> selectedMeds = [];
 
   String search = "";
-  final TextEditingController durationCtrl =
-      TextEditingController(text: "5");
+  final TextEditingController durationCtrl = TextEditingController(text: "5");
+  final TextEditingController notesCtrl = TextEditingController();
 
-  final List<String> timingOptions = [
-    "Morning",
-    "Afternoon",
-    "Night"
-  ];
+  final List<String> timingOptions = ["Morning", "Afternoon", "Night"];
 
   final Set<String> selectedTimings = {"Morning"};
 
@@ -43,20 +36,23 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
     }
 
     try {
+      final notesList = notesCtrl.text
+          .split("\n")
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
       for (final med in selectedMeds) {
-        await ApiClient.post(
-          "/patient/doctor/prescribe-from-master",
-          {
-            "patient_id": widget.patientId,
-            "medicine_id": med["id"],
-            "timing": selectedTimings.toList(),
-            "duration_days": int.parse(durationCtrl.text),
-          },
-        );
+        await ApiClient.post("/patient/doctor/prescribe-from-master", {
+          "patient_id": widget.patientId,
+          "medicine_id": med["id"],
+          "timing": selectedTimings.toList(),
+          "duration_days": int.parse(durationCtrl.text),
+          "notes": notesList,
+        });
       }
 
-      _showMsg("Medicines prescribed successfully",
-          success: true);
+      _showMsg("Medicines prescribed successfully", success: true);
       Navigator.pop(context, true);
     } catch (e) {
       _showMsg(e.toString());
@@ -75,13 +71,11 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F7FB),
-      appBar: AppBar(
-        title: const Text("Prescribe Medicines"),
-      ),
+      backgroundColor: AppTheme.primarylight,
+      appBar: AppBar(title: const Text("Prescribe Medicines")),
 
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: ElevatedButton(
           onPressed: _submitPrescription,
           style: ElevatedButton.styleFrom(
@@ -100,7 +94,6 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
       body: FutureBuilder(
         future: _medicineFuture,
         builder: (context, snapshot) {
-
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -124,7 +117,6 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
 
           return Column(
             children: [
-
               /// 🔍 Search
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -132,7 +124,18 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
                   decoration: const InputDecoration(
                     hintText: "Search medicine...",
                     prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide.none, // 🔥 remove default border
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.primary, width: 1),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.primary, width: 1),
+                    ),
                   ),
                   onChanged: (v) {
                     setState(() => search = v);
@@ -142,8 +145,7 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
 
               /// ⏰ Timing & Duration
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -155,9 +157,16 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
                       spacing: 10,
                       children: timingOptions.map((t) {
                         return FilterChip(
-                          label: Text(t),
-                          selected:
-                              selectedTimings.contains(t),
+                          label: Text(
+                            t,
+                            style: TextStyle(
+                              color: selectedTimings.contains(t)
+                                  ? Colors.white
+                                  : Colors.black87,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          selected: selectedTimings.contains(t),
                           onSelected: (val) {
                             setState(() {
                               val
@@ -165,6 +174,20 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
                                   : selectedTimings.remove(t);
                             });
                           },
+                          selectedColor: AppTheme.primary, // 🔥 selected bg
+                          backgroundColor:
+                              Colors.grey.shade100, // 🔹 unselected bg
+                          checkmarkColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              20,
+                            ), // pill shape
+                            side: BorderSide(
+                              color: selectedTimings.contains(t)
+                                  ? AppTheme.primary
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
                         );
                       }).toList(),
                     ),
@@ -174,7 +197,62 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: "Duration (days)",
-                        border: OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide:
+                              BorderSide.none, // 🔥 remove default border
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide(
+                            color: AppTheme.primary,
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide(
+                            color: AppTheme.primary,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    const Text(
+                      "Doctor Notes / Instructions",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    TextField(
+                      controller: notesCtrl,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        hintText:
+                            "Enter each instruction on new line\nExample:\nTake after food\nDrink water",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide:
+                              BorderSide.none, // 🔥 remove default border
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide(
+                            color: AppTheme.primary,
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide(
+                            color: AppTheme.primary,
+                            width: 1,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -190,13 +268,14 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final med = filtered[index];
-                    final selected = selectedMeds
-                        .any((m) => m["id"] == med["id"]);
+                    final selected = selectedMeds.any(
+                      (m) => m["id"] == med["id"],
+                    );
 
                     return Card(
-                      elevation: 2,
-                      margin:
-                          const EdgeInsets.only(bottom: 12),
+                      elevation: .5,
+                      color: Colors.grey.shade50,
+                      margin: const EdgeInsets.only(bottom: 12),
                       child: CheckboxListTile(
                         value: selected,
                         onChanged: (val) {
@@ -204,30 +283,25 @@ class _PrescribeMedicinePageState extends State<PrescribeMedicinePage> {
                             val == true
                                 ? selectedMeds.add(med)
                                 : selectedMeds.removeWhere(
-                                    (m) =>
-                                        m["id"] ==
-                                        med["id"]);
+                                    (m) => m["id"] == med["id"],
+                                  );
                           });
                         },
+
                         title: Text(
                           med["name"],
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(med["company"]),
-                            Text(
-                                "${med["dosage"]} • ${med["form"]}"),
+                            Text("${med["dosage"]} • ${med["form"]}"),
                           ],
                         ),
                         secondary: Text(
                           "₹${med["price"]}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     );

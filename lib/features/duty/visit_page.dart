@@ -25,6 +25,7 @@ class _VisitPageState extends State<VisitPage> {
     try {
       setState(() => loading = true);
       final res = await ApiClient.get("/nurse/nurse/visits");
+      print(res);
       visits = res ?? [];
     } catch (e) {
       log(e.toString());
@@ -81,7 +82,9 @@ class _VisitPageState extends State<VisitPage> {
 
 /// ================= VISIT CARD =================
 
-class _VisitCard extends StatelessWidget {
+/// ================= VISIT CARD =================
+
+class _VisitCard extends StatefulWidget {
   final Map visit;
   final VoidCallback onComplete;
   final VoidCallback onSOS;
@@ -93,125 +96,257 @@ class _VisitCard extends StatelessWidget {
   });
 
   @override
+  State<_VisitCard> createState() => _VisitCardState();
+}
+
+class _VisitCardState extends State<_VisitCard> {
+  Map<String, dynamic>? lastVitals;
+  bool loadingVitals = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVitals();
+  }
+
+  /// 🔥 LOAD LATEST VITALS
+  Future<void> _loadVitals() async {
+    try {
+      loadingVitals = true;
+
+      final res = await ApiClient.get(
+        "/nurse/patients/${widget.visit["patient_id"]}/vital-details?limit=1",
+      );
+
+      final vitals = res["vitals"];
+
+      if (vitals != null && vitals.isNotEmpty) {
+        lastVitals = vitals[0];
+      }
+    } catch (e) {
+      log("Vitals load error: $e");
+    }
+
+    setState(() => loadingVitals = false);
+  }
+
+  /// 🔥 OPEN BOTTOM SHEET
+  void _openVitalsDetails() {
+    if (lastVitals == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("No previous vitals found")));
+      return;
+    }
+
+    final patientName = widget.visit["patient_name"] ?? "Unknown";
+    String _formatDate(String? iso) {
+      if (iso == null) return "-";
+      final dt = DateTime.tryParse(iso);
+      if (dt == null) return iso;
+
+      return "${dt.day}/${dt.month}/${dt.year}  ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}";
+    }
+
+    String _prettyKey(String key) {
+      return key
+          .replaceAll("_", " ")
+          .split(" ")
+          .map((w) => w[0].toUpperCase() + w.substring(1))
+          .join(" ");
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView(
+            children: [
+              /// 🔥 HEADER
+              const SizedBox(height: 4),
+
+              const Text(
+                "Previous Vitals",
+                style: TextStyle(color: Colors.black54),
+              ),
+
+              Text(
+                patientName,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Divider(height: 20),
+
+              /// vitals list
+              ...lastVitals!.entries
+                  .where((e) => e.key != "id") // hide id
+                  .map((e) {
+                    if (e.key == "recorded_at") {
+                      return _row("Recorded At", _formatDate(e.value));
+                    }
+                    return _row(_prettyKey(e.key), e.value);
+                  }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _row(String k, dynamic v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(k, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(v?.toString() ?? "-"),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bool completed = visit["completed"] == true;
+    final visit = widget.visit;
+    final bool completed = visit["completed"];
     final List meds = visit["medications"] ?? [];
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: .5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// NAME + STATUS
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  visit["patient_name"] ?? "Unknown",
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                _StatusBadge(completed: completed),
-              ],
-            ),
-
-            const SizedBox(height: 6),
-
-            /// ADDRESS
-            Row(
-              children: [
-                const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    visit["address"] ?? "",
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            /// WARD / ROOM
-            Text(
-              "Ward: ${visit["ward"] ?? "-"} | Room: ${visit["room_no"] ?? "-"}",
-              style: const TextStyle(fontSize: 13),
-            ),
-
-            const Divider(height: 24),
-
-            /// MEDICATIONS
-            if (meds.isNotEmpty) ...[
-              const Text(
-                "Medicines",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              ...meds.map((m) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        m["medicine_name"],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text("Dosage: ${m["dosage"]}"),
-                      Text("Timing: ${(m["timing"] as List).join(", ")}"),
-                      Text("Duration: ${m["duration_days"]} days"),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ],
-
-            const SizedBox(height: 12),
-
-            /// BUTTONS
-            Row(
-              children: [
-                if (!completed)
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Material(
+        elevation: .5,
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// NAME + STATUS + VIEW BUTTON
+              Row(
+                children: [
                   Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text("Complete"),
-                      onPressed: onComplete,
+                    child: Text(
+                      visit["patient_name"] ?? "Unknown",
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                if (!completed) const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
-                    icon: const Icon(Icons.warning_amber),
-                    label: const Text("SOS"),
-                    onPressed: onSOS,
+
+                  _StatusBadge(completed: completed),
+
+                  const SizedBox(width: 6),
+
+                  IconButton(
+                    tooltip: "View Vitals",
+                    icon: loadingVitals
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.visibility),
+                    onPressed: loadingVitals ? null : _openVitalsDetails,
                   ),
+                ],
+              ),
+
+              SizedBox(height: visit["dutyLocation"] == "HOME" ? 0 : 0),
+
+              // patient_address
+              /// ADDRESS
+              if (visit["dutyLocation"] == "HOME")
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: Colors.black,
+                    ),
+
+                    Expanded(
+                      child: Text(
+                        visit["address"] ?? "-",
+                        style: const TextStyle(color: Colors.black),
+                      ),
+                    ),
+                  ],
                 ),
+
+              // Row(
+              //   children: [
+              //     const Icon(Icons.location_on, size: 16, color: Colors.grey),
+              //     const SizedBox(width: 6),
+              //     Expanded(
+              //       child: Text(
+              //         visit["patient_address"] ?? "",
+              //         style: const TextStyle(color: Colors.grey),
+              //       ),
+              //     ),
+              //   ],
+              // ),
+              // const SizedBox(height: 8),
+
+              /// WARD / ROOM
+              visit["dutyLocation"] == "HOSPITAL"
+                  ? Text(
+                      "Ward: ${visit["ward"] ?? "-"} | Room: ${visit["room_no"] ?? "-"}",
+                      style: const TextStyle(fontSize: 13),
+                    )
+                  : const SizedBox.shrink(),
+
+              const Divider(height: 24),
+           
+              /// MEDS
+              if (meds.isNotEmpty) ...[
+                const Text(
+                  "Medicines",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                ...meds.map((m) => Text(m["medicine_name"])).toList(),
               ],
-            ),
-          ],
+
+              const SizedBox(height: 12),
+
+              /// BUTTONS
+              Row(
+                children: [
+                  if (!completed)
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: widget.onComplete,
+                        child: const Text("Complete"),
+                      ),
+                    ),
+                  if (!completed) const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      onPressed: widget.onSOS,
+                      child: const Text("SOS"),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-
-/// ================= COMPLETE VISIT DIALOG =================
 
 class _CompleteVisitDialog extends StatefulWidget {
   final String visitId;
@@ -226,15 +361,41 @@ class _CompleteVisitDialog extends StatefulWidget {
 class _CompleteVisitDialogState extends State<_CompleteVisitDialog> {
   final _formKey = GlobalKey<FormState>();
 
+  /// ================= CONTROLLERS =================
+
   final noteCtrl = TextEditingController();
+
   final bpCtrl = TextEditingController();
   final pulseCtrl = TextEditingController();
   final spo2Ctrl = TextEditingController();
   final tempCtrl = TextEditingController();
-  final sugarCtrl = TextEditingController();
+  final rbsCtrl = TextEditingController();
+  final o2Ctrl = TextEditingController();
+
+  final bipapCtrl = TextEditingController();
+  final ivCtrl = TextEditingController();
+  final suctionCtrl = TextEditingController();
+  final feedingCtrl = TextEditingController();
+  final vomitingCtrl = TextEditingController();
+
+  final urineCtrl = TextEditingController();
+  final stoolCtrl = TextEditingController();
+  final otherCtrl = TextEditingController();
 
   bool loading = false;
   bool consentAccepted = false;
+
+  /// 🔥 store previous vitals for dropdown
+  Map<String, dynamic>? lastVitals;
+
+  /// ================= HELPERS =================
+
+  int? _int(String v) => v.isEmpty ? null : int.tryParse(v);
+  double? _double(String v) => v.isEmpty ? null : double.tryParse(v);
+
+  /// ================= INIT =================
+
+  /// ================= SUBMIT =================
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -242,28 +403,101 @@ class _CompleteVisitDialogState extends State<_CompleteVisitDialog> {
     setState(() => loading = true);
 
     try {
+      print("🚀 SUBMIT START");
+
+      /// 1️⃣ NOTE
       await ApiClient.post("/nurse/patients/${widget.patientId}/notes", {
         "note": noteCtrl.text,
       });
 
-      await ApiClient.post("/nurse/patients/${widget.patientId}/vitals", {
+      /// 2️⃣ VITALS
+      final payload = {
         "bp": bpCtrl.text,
-        "pulse": int.parse(pulseCtrl.text),
-        "spo2": int.parse(spo2Ctrl.text),
-        "temperature": double.parse(tempCtrl.text),
-        "sugar": sugarCtrl.text.isEmpty ? null : double.parse(sugarCtrl.text),
-      });
+        "pulse": _int(pulseCtrl.text),
+        "spo2": _int(spo2Ctrl.text),
+        "temperature": _double(tempCtrl.text),
+        "o2_level": _int(o2Ctrl.text),
+        "rbs": _double(rbsCtrl.text),
 
+        "bipap_ventilator": bipapCtrl.text,
+        "iv_fluids": ivCtrl.text,
+        "suction": suctionCtrl.text,
+        "feeding_tube": feedingCtrl.text,
+        "vomit_aspirate": vomitingCtrl.text,
+        "urine": urineCtrl.text,
+        "stool": stoolCtrl.text,
+        "other": otherCtrl.text,
+      };
+
+      print("📤 VITALS PAYLOAD => $payload");
+
+      await ApiClient.post(
+        "/nurse/patients/${widget.patientId}/vital-details",
+        payload,
+      );
+
+      /// 3️⃣ COMPLETE VISIT
       await ApiClient.post("/nurse/visits/${widget.visitId}/complete", {});
 
+      print("✅ VISIT COMPLETED");
+
       Navigator.pop(context, true);
-    } catch (_) {
+    } catch (e, s) {
+      print("🔥 SUBMIT ERROR => $e");
+      print(s);
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Failed to submit")));
     }
 
     setState(() => loading = false);
+  }
+
+  /// ================= UI =================
+
+  void _openVitalsDetails() {
+    if (lastVitals == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("No previous vitals found")));
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView(
+            children: [
+              const Text(
+                "Previous Vitals",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+
+              _vitalRow("BP", lastVitals!["bp"]),
+              _vitalRow("Pulse", lastVitals!["pulse"]),
+              _vitalRow("SpO2", lastVitals!["spo2"]),
+              _vitalRow("Temp", lastVitals!["temperature"]),
+              _vitalRow("O2 Level", lastVitals!["o2_level"]),
+              _vitalRow("RBS", lastVitals!["rbs"]),
+              _vitalRow("IV Fluids", lastVitals!["iv_fluids"]),
+              _vitalRow("Suction", lastVitals!["suction"]),
+              _vitalRow("R.T/ORAL", lastVitals!["feeding_tube"]),
+              _vitalRow("Vomit Aspirate", lastVitals!["vomit_aspirate"]),
+              _vitalRow("Urine", lastVitals!["urine"]),
+              _vitalRow("Stool", lastVitals!["stool"]),
+              _vitalRow("Other", lastVitals!["other"]),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -276,46 +510,53 @@ class _CompleteVisitDialogState extends State<_CompleteVisitDialog> {
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Complete Visit",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
+                _sectionTitle("Daily Note"),
+                _input("Note", noteCtrl, max: 3),
 
-                _input("Daily Note", noteCtrl, max: 3),
-                _input("BP (120/80)", bpCtrl),
-                _input("Pulse", pulseCtrl, number: true),
-                _input("SpO2", spo2Ctrl, number: true),
-                _input("Temperature", tempCtrl, number: true),
-                _input(
-                  "Sugar (optional)",
-                  sugarCtrl,
-                  number: true,
-                  required: false,
-                ),
+                _sectionTitle("Vitals"),
+                _grid([
+                  _input("BP", bpCtrl),
+                  _input("Pulse", pulseCtrl, number: true),
+                  _input("SpO2", spo2Ctrl, number: true),
+                  _input("Temp", tempCtrl, number: true),
+                  _input("O2 Lavel", o2Ctrl, number: true, required: false),
+                  _input("RBS", rbsCtrl, number: true, required: false),
+                ]),
 
-                const SizedBox(height: 10),
+                _sectionTitle("Supports"),
+                _grid([
+                  _input("BiPAP", bipapCtrl, required: false),
+                  _input("IV Fluids", ivCtrl, required: false),
+                  _input("Suction", suctionCtrl, required: false),
+                  _input("R.T/ORAL", feedingCtrl, required: false),
+                  _input("Vomit Aspirate", vomitingCtrl, required: false),
+                ]),
 
-                /// CONSENT
+                _sectionTitle("Outputs"),
+                _grid([
+                  _input("Urine", urineCtrl, required: false),
+                  _input("Stool", stoolCtrl, required: false),
+                  _input("Other", otherCtrl, required: false),
+                ]),
+
+                const SizedBox(height: 14),
+
                 Row(
                   children: [
                     Checkbox(
                       value: consentAccepted,
-                      onChanged: (v) {
-                        setState(() => consentAccepted = v ?? false);
-                      },
+                      onChanged: (v) =>
+                          setState(() => consentAccepted = v ?? false),
                     ),
                     const Expanded(
-                      child: Text(
-                        "I confirm that I have visited the patient and entered correct information",
-                        style: TextStyle(fontSize: 13),
-                      ),
+                      child: Text("I confirm information is correct"),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 SizedBox(
                   width: double.infinity,
@@ -334,6 +575,73 @@ class _CompleteVisitDialogState extends State<_CompleteVisitDialog> {
     );
   }
 
+  /// ================= DROPDOWN =================
+
+  Widget _previousVitalsDropdown() {
+    return ExpansionTile(
+      initiallyExpanded: false, // 👈 auto open chahiye? true kar do
+      title: const Text(
+        "Previous Vitals",
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      children: [
+        if (lastVitals == null)
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: Text("Loading or no previous vitals found"),
+          )
+        else ...[
+          _vitalRow("BP", lastVitals!["bp"]),
+          _vitalRow("Pulse", lastVitals!["pulse"]),
+          _vitalRow("SpO2", lastVitals!["spo2"]),
+          _vitalRow("Temp", lastVitals!["temperature"]),
+          _vitalRow("O2 Level", lastVitals!["o2_level"]),
+          _vitalRow("RBS", lastVitals!["rbs"]),
+          _vitalRow("IV Fluids", lastVitals!["iv_fluids"]),
+          _vitalRow("Suction", lastVitals!["suction"]),
+          _vitalRow("R.T/ORAL", lastVitals!["feeding_tube"]),
+          _vitalRow("Vomit Aspirate", lastVitals!["vomit_aspirate"]),
+          _vitalRow("Urine", lastVitals!["urine"]),
+          _vitalRow("Stool", lastVitals!["stool"]),
+          _vitalRow("Other", lastVitals!["other"]),
+        ],
+      ],
+    );
+  }
+
+  Widget _vitalRow(String label, dynamic value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(value?.toString() ?? "-"),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) => Padding(
+    padding: const EdgeInsets.only(top: 14, bottom: 6),
+    child: Text(
+      title,
+      style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+    ),
+  );
+
+  Widget _grid(List<Widget> children) {
+    return GridView.count(
+      crossAxisCount: 2, // ⭐ always 2 fields
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 3.2, // height control (adjust if needed)
+      children: children,
+    );
+  }
+
   Widget _input(
     String label,
     TextEditingController ctrl, {
@@ -341,22 +649,39 @@ class _CompleteVisitDialogState extends State<_CompleteVisitDialog> {
     bool required = true,
     int max = 1,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: ctrl,
-        maxLines: max,
-        keyboardType: number ? TextInputType.number : TextInputType.text,
-        validator: required
-            ? (v) => v == null || v.isEmpty ? "Required" : null
-            : null,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
+    return TextFormField(
+      controller: ctrl,
+      maxLines: max,
+      keyboardType: number ? TextInputType.number : TextInputType.text,
+      validator: required
+          ? (v) => v == null || v.isEmpty ? "Required" : null
+          : null,
+      decoration: _inputDecoration(label),
     );
   }
+}
+
+InputDecoration _inputDecoration(String label) {
+  return InputDecoration(
+    labelText: label,
+    filled: true,
+    fillColor: AppTheme.primarylight,
+    // 🔹 normal (unfocused)
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: AppTheme.primary, width: 1),
+    ),
+
+    // 🔹 focused
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: AppTheme.primary, width: 1.8),
+    ),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide(color: AppTheme.primary, width: 1),
+    ),
+  );
 }
 
 /// ================= STATUS BADGE =================
@@ -369,7 +694,7 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = completed ? Colors.green : Colors.orange;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),

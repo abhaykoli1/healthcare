@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/features/doctor/pataint_details.dart';
 
 class MyPatientsPage extends StatefulWidget {
@@ -39,10 +40,8 @@ class _MyPatientsPageState extends State<MyPatientsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F7FB),
-      appBar: AppBar(
-        title: const Text("My Patients"),
-      ),
+      backgroundColor: AppTheme.primarylight,
+      appBar: AppBar(title: const Text("My Patients")),
       body: FutureBuilder(
         future: _patientsFuture,
         builder: (context, snapshot) {
@@ -91,8 +90,22 @@ class _MyPatientsPageState extends State<MyPatientsPage> {
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                        borderSide: BorderSide.none, // 🔥 remove default border
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                        borderSide: const BorderSide(
+                          color: AppTheme.primary,
+                          width: 1,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                        borderSide: const BorderSide(
+                          color: AppTheme.primary,
+                          width: 1,
+                        ),
                       ),
                     ),
                   ),
@@ -153,7 +166,7 @@ class _PatientCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -209,8 +222,7 @@ class _PatientCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.location_on,
-                  size: 16, color: Colors.grey),
+              const Icon(Icons.location_on, size: 16, color: Colors.grey),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -226,8 +238,7 @@ class _PatientCard extends StatelessWidget {
           /// 🗓 SERVICE DATES
           Row(
             children: [
-              const Icon(Icons.calendar_today,
-                  size: 14, color: Colors.grey),
+              const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
               const SizedBox(width: 6),
               Text(
                 "From ${_formatDate(patient["service_start"])}",
@@ -249,8 +260,7 @@ class _PatientCard extends StatelessWidget {
               Navigator.push(
                 context,
                 CupertinoPageRoute(
-                  builder: (_) =>
-                      PatientDetailPage(patientId: patient["id"]),
+                  builder: (_) => PatientDetailPage(patientId: patient["id"]),
                 ),
               );
             },
@@ -258,7 +268,7 @@ class _PatientCard extends StatelessWidget {
               height: 40,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: Colors.green,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Center(

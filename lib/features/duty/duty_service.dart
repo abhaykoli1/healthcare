@@ -46,7 +46,8 @@ class DutyService {
       Uri.parse("$baseUrl/nurse/duty/status"),
       headers: {"Authorization": "Bearer $token"},
     );
-    log("Duty Status Response:");
+
+    log("Duty Status Response: ${res.body}");
     log(res.body);
     if (res.statusCode != 200) {
       throw Exception("Failed to get duty status");

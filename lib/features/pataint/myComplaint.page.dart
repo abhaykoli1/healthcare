@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 
 class MyComplaintsPage extends StatefulWidget {
   const MyComplaintsPage({super.key});
@@ -28,9 +29,7 @@ class _MyComplaintsPageState extends State<MyComplaintsPage> {
     if (msg.isEmpty) return;
 
     try {
-      await ApiClient.post("/admin/complaint/create", {
-        "message": msg,
-      });
+      await ApiClient.post("/admin/complaint/create", {"message": msg});
 
       _messageCtrl.clear();
       Navigator.pop(context);
@@ -40,9 +39,9 @@ class _MyComplaintsPageState extends State<MyComplaintsPage> {
         const SnackBar(content: Text("Complaint raised successfully")),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -50,10 +49,8 @@ class _MyComplaintsPageState extends State<MyComplaintsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F7FB),
-      appBar: AppBar(
-        title: const Text("My Complaints"),
-      ),
+      backgroundColor: AppTheme.primarylight,
+      appBar: AppBar(title: const Text("My Complaints")),
 
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreateDialog,
@@ -106,6 +103,7 @@ class _MyComplaintsPageState extends State<MyComplaintsPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: AppTheme.primarylight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -132,7 +130,27 @@ class _MyComplaintsPageState extends State<MyComplaintsPage> {
                 maxLines: 4,
                 decoration: const InputDecoration(
                   hintText: "Write your complaint...",
-                  border: OutlineInputBorder(),
+                  // border: OutlineInputBorder(
+                  //   borderRadius: BorderRadius.all(Radius.circular(12)),
+                  // ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                    borderSide: BorderSide.none, // 🔥 remove default border
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                    borderSide: const BorderSide(
+                      color: Colors.redAccent,
+                      width: 1,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                    borderSide: const BorderSide(
+                      color: AppTheme.primary,
+                      width: 1,
+                    ),
+                  ),
                 ),
               ),
 
@@ -178,30 +196,26 @@ class _ComplaintCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            data["message"] ?? "-",
-            style: const TextStyle(fontSize: 15),
-          ),
+          Text(data["message"] ?? "-", style: const TextStyle(fontSize: 15)),
           const SizedBox(height: 12),
 
           Align(
             alignment: Alignment.centerRight,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: _statusColor(status).withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),

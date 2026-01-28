@@ -2,6 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
+import 'package:healthcare/features/auth/about_us_page.dart';
+import 'package:healthcare/features/doctor/edit_doctor_profile_page.dart';
 import 'package:healthcare/features/doctor/pataint_list.page.dart';
 import 'package:healthcare/routes/app_routes.dart';
 
@@ -24,20 +27,31 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppTheme.primarylight,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false, // 👈 back button off
         title: const Text(
           "Doctor Profile",
           style: TextStyle(color: Colors.black),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline), // about icon
+            tooltip: "About Us",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AboutUsPage()),
+              );
+            },
+          ),
+        ],
       ),
 
       body: FutureBuilder(
         future: _doctorFuture,
         builder: (context, snapshot) {
-
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -58,8 +72,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
           return RefreshIndicator(
             onRefresh: () async {
               setState(() {
-                _doctorFuture =
-                    ApiClient.get("/doctor/my-patients");
+                _doctorFuture = ApiClient.get("/doctor/my-patients");
               });
             },
             child: SingleChildScrollView(
@@ -67,28 +80,75 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-
                   /// 👨‍⚕️ Doctor Card
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: _cardDecoration(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Stack(
                       children: [
-                        Text(
-                          doctor["phone"] ?? "-",
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        // =========================
+                        // MAIN CONTENT
+                        // =========================
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              doctor["name"] ?? "-",
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            Text(
+                              doctor["phone"] ?? "-",
+                              style: const TextStyle(fontSize: 12),
+                            ),
+
+                            const SizedBox(height: 2),
+
+                            Text(
+                              "Specialization: ${doctor["specialization"] ?? "-"}",
+                            ),
+
+                            const SizedBox(height: 5),
+
+                            _tag(
+                              "${doctor["experience_years"] ?? 0} yrs experience",
+                              Colors.green,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(doctor["specialization"] ?? "-"),
-                        const SizedBox(height: 10),
-                        _tag(
-                          "${doctor["experience_years"] ?? 0} yrs experience",
-                          Colors.blue,
+
+                        // =========================
+                        // 🔥 EDIT BUTTON (TOP RIGHT)
+                        // =========================
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const EditDoctorProfilePage(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.edit,
+                                size: 18,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -115,32 +175,39 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
 
                   /// 👥 Patient List
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                     decoration: _cardDecoration(),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
-                          children:  [
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
                             Text(
                               "Assigned Patients",
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 17,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             GestureDetector(
                               onTap: () {
-                                Navigator.push(context, CupertinoPageRoute(builder: (context) => MyPatientsPage()));
+                                Navigator.push(
+                                  context,
+                                  CupertinoPageRoute(
+                                    builder: (context) => MyPatientsPage(),
+                                  ),
+                                );
                               },
-                              child: Text("See All", style: TextStyle(
-                                  fontSize: 19,
+                              child: Text(
+                                "See All",
+                                style: TextStyle(
+                                  fontSize: 14,
                                   color: Colors.blue,
                                   fontWeight: FontWeight.bold,
-                                ),),
-                            )
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -155,8 +222,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                         else
                           ListView.separated(
                             shrinkWrap: true,
-                            physics:
-                                const NeverScrollableScrollPhysics(),
+                            physics: const NeverScrollableScrollPhysics(),
                             itemCount: patients.length,
                             separatorBuilder: (_, __) =>
                                 const Divider(height: 20),
@@ -186,9 +252,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                                   ),
                                   Text(
                                     "${p["age"] ?? "-"} / ${p["gender"] ?? "-"}",
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                    ),
+                                    style: const TextStyle(color: Colors.grey),
                                   ),
                                 ],
                               );
@@ -204,7 +268,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
         },
       ),
       bottomSheet: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
         child: GestureDetector(
           onTap: () async {
             await TokenStorage.clearToken();
@@ -219,14 +283,18 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
           child: Container(
             height: 50,
             width: double.infinity,
-             decoration: BoxDecoration(
-             color: Colors.orange,
-             borderRadius: BorderRadius.circular(20)
-             ),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(14),
+            ),
             alignment: Alignment.center,
             child: const Text(
               "Logout",
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -238,7 +306,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
 
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
-      color: Colors.white,
+      color: Colors.grey.shade50,
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
@@ -252,37 +320,30 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
 
   Widget _tag(String text, Color color) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        text,
-        style: TextStyle(color: color, fontSize: 12),
-      ),
+      child: Text(text, style: TextStyle(color: color, fontSize: 12)),
     );
   }
 
   Widget _statCard(String title, String value) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: _cardDecoration(),
         child: Column(
           children: [
             Text(
               title,
-              style: const TextStyle(color: Colors.grey),
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 7),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
         ),

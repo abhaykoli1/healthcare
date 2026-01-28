@@ -2,6 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+<!-- Location permission (REQUIRED) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app tracks nurse location during active duty for patient safety.</string>
+
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>This app tracks nurse location during active duty for patient safety.</string>
+
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app tracks nurse location during active duty for patient safety.</string>
+
+    <key>NSCameraUsageDescription</key>
+    <string>Camera access required to upload documents</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Gallery access required to upload documents</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

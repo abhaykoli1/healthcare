@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 import '../../core/network/api_client.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 
 class NurseAttendancePage extends StatefulWidget {
   const NurseAttendancePage({super.key});
@@ -14,11 +14,14 @@ class _NurseAttendancePageState extends State<NurseAttendancePage> {
   DateTime selectedMonth = DateTime.now();
 
   bool loading = true;
+  bool error = false;
 
   List<Map<String, dynamic>> attendance = [];
+
   int present = 0;
   int absent = 0;
   int half = 0;
+  int totalDays = 0;
 
   @override
   void initState() {
@@ -26,36 +29,56 @@ class _NurseAttendancePageState extends State<NurseAttendancePage> {
     _loadAttendance();
   }
 
+  // =======================================================
+  // 🔥 FETCH ATTENDANCE
+  // =======================================================
+
   Future<void> _loadAttendance() async {
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+      error = false;
+    });
 
     try {
       final monthStr = DateFormat("yyyy-MM").format(selectedMonth);
 
       final res = await ApiClient.get("/nurse/attendance?month=$monthStr");
-
+      print("Atten $res");
       setState(() {
         attendance = List<Map<String, dynamic>>.from(res["attendance"] ?? []);
 
-        present = res["summary"]["present"] ?? 0;
-        absent = res["summary"]["absent"] ?? 0;
-        half = res["summary"]["half"] ?? 0;
+        final summary = res["summary"] ?? {};
+
+        present = summary["present"] ?? 0;
+        absent = summary["absent"] ?? 0;
+        half = summary["half"] ?? 0;
+        totalDays = summary["total_days"] ?? attendance.length;
 
         loading = false;
       });
     } catch (e) {
-      loading = false;
+      setState(() {
+        loading = false;
+        error = true;
+      });
+
       _snack("Failed to load attendance");
-      setState(() {});
     }
   }
 
+  // =======================================================
+  // 🔥 MONTH CHANGE
+  // =======================================================
+
   void _changeMonth(int diff) {
-    setState(() {
-      selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + diff);
-    });
+    selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + diff);
+
     _loadAttendance();
   }
+
+  // =======================================================
+  // UI
+  // =======================================================
 
   @override
   Widget build(BuildContext context) {
@@ -64,60 +87,80 @@ class _NurseAttendancePageState extends State<NurseAttendancePage> {
       appBar: AppBar(title: const Text("My Attendance"), centerTitle: true),
       body: loading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  /// 📅 MONTH SELECTOR
-                  _MonthSelector(
-                    month: selectedMonth,
-                    onPrev: () => _changeMonth(-1),
-                    onNext: () => _changeMonth(1),
-                  ),
+          : error
+          ? _ErrorView(onRetry: _loadAttendance)
+          : RefreshIndicator(
+              onRefresh: _loadAttendance,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _MonthSelector(
+                      month: selectedMonth,
+                      onPrev: () => _changeMonth(-1),
+                      onNext: () => _changeMonth(1),
+                    ),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  /// 📊 SUMMARY
-                  Row(
-                    children: [
-                      _SummaryCard(
-                        title: "Present",
-                        count: present,
-                        color: Colors.green,
+                    /// SUMMARY
+                    Row(
+                      children: [
+                        _SummaryCard(
+                          title: "Present",
+                          count: present,
+                          color: Colors.green,
+                        ),
+                        const SizedBox(width: 10),
+                        _SummaryCard(
+                          title: "Half",
+                          count: half,
+                          color: Colors.orange,
+                        ),
+                        const SizedBox(width: 10),
+                        _SummaryCard(
+                          title: "Absent",
+                          count: absent,
+                          color: Colors.red,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Text(
+                      "$present / $totalDays days worked",
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    /// ATTENDANCE
+                    ///
+                    Expanded(
+                      child: _AttendanceCalendar(
+                        month: selectedMonth,
+                        attendance: attendance,
                       ),
-                      const SizedBox(width: 12),
-                      _SummaryCard(
-                        title: "Absent",
-                        count: absent,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(width: 12),
-                      _SummaryCard(
-                        title: "Half Day",
-                        count: half,
-                        color: Colors.orange,
-                      ),
-                    ],
-                  ),
+                    ),
 
-                  const SizedBox(height: 24),
+                    /// LIST
+                    // Expanded(
+                    //   child: ListView.builder(
+                    //     physics: const AlwaysScrollableScrollPhysics(),
+                    //     itemCount: attendance.length,
+                    //     itemBuilder: (context, index) {
+                    //       final a = attendance[index];
 
-                  /// 📋 DAILY LIST
-                  Expanded(
-                    child: attendance.isEmpty
-                        ? _EmptyAttendance(onRefresh: _loadAttendance)
-                        : ListView.builder(
-                            itemCount: attendance.length,
-                            itemBuilder: (context, index) {
-                              final a = attendance[index];
-                              return _AttendanceTile(
-                                day: a["day"],
-                                status: a["status"],
-                              );
-                            },
-                          ),
-                  ),
-                ],
+                    //       return _AttendanceTile(
+                    //         day: a["day"],
+                    //         status: a["status"],
+                    //       );
+                    //     },
+                    //   ),
+                    // ),
+                  ],
+                ),
               ),
             ),
     );
@@ -128,11 +171,99 @@ class _NurseAttendancePageState extends State<NurseAttendancePage> {
   }
 }
 
-/// ================= EMPTY STATE =================
+////////////////////////////////////////////////////////////////////////
+/// CALENDAR VIEW
+////////////////////////////////////////////////////////////////////////
 
-class _EmptyAttendance extends StatelessWidget {
-  final VoidCallback onRefresh;
-  const _EmptyAttendance({required this.onRefresh});
+class _AttendanceCalendar extends StatelessWidget {
+  final DateTime month;
+  final List<Map<String, dynamic>> attendance;
+
+  const _AttendanceCalendar({required this.month, required this.attendance});
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now();
+
+    /// map day -> status
+    final Map<int, String> statusMap = {
+      for (var a in attendance) a["day"]: a["status"],
+    };
+
+    final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
+
+    return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: daysInMonth,
+      itemBuilder: (context, index) {
+        final day = index + 1;
+        final date = DateTime(month.year, month.month, day);
+
+        final isFuture = date.isAfter(today);
+
+        final status = statusMap[day];
+
+        Color color = Colors.grey.shade500;
+        IconData icon = Icons.circle;
+
+        if (!isFuture) {
+          switch (status) {
+            case "PRESENT":
+              color = Colors.green;
+              icon = Icons.check;
+              break;
+
+            case "HALF":
+              color = Colors.orange;
+              icon = Icons.timelapse;
+              break;
+
+            case "ABSENT":
+              color = Colors.red;
+              icon = Icons.close;
+              break;
+
+            default:
+              color = Colors.black;
+          }
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(.5)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "$day",
+                style: TextStyle(fontWeight: FontWeight.bold, color: color),
+              ),
+              const SizedBox(height: 4),
+              // Icon(icon, size: 16, color: color),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+////////////////////////////////////////////////////////////////////////
+/// ERROR VIEW
+////////////////////////////////////////////////////////////////////////
+
+class _ErrorView extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _ErrorView({required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -140,36 +271,20 @@ class _EmptyAttendance extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_busy, size: 80, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          const Text(
-            "No attendance found",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            "Attendance data is not available for this month",
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: onRefresh,
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text("Refresh"),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
-            ),
-          ),
+          const Icon(Icons.wifi_off, size: 60, color: Colors.grey),
+          const SizedBox(height: 10),
+          const Text("Failed to load attendance"),
+          const SizedBox(height: 10),
+          ElevatedButton(onPressed: onRetry, child: const Text("Retry")),
         ],
       ),
     );
   }
 }
 
-/// ================= MONTH SELECTOR =================
+////////////////////////////////////////////////////////////////////////
+/// MONTH SELECTOR
+////////////////////////////////////////////////////////////////////////
 
 class _MonthSelector extends StatelessWidget {
   final DateTime month;
@@ -198,7 +313,9 @@ class _MonthSelector extends StatelessWidget {
   }
 }
 
-/// ================= SUMMARY CARD =================
+////////////////////////////////////////////////////////////////////////
+/// SUMMARY CARD
+////////////////////////////////////////////////////////////////////////
 
 class _SummaryCard extends StatelessWidget {
   final String title;
@@ -223,7 +340,7 @@ class _SummaryCard extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              count.toString(),
+              "$count",
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -242,7 +359,9 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-/// ================= ATTENDANCE TILE =================
+////////////////////////////////////////////////////////////////////////
+/// ATTENDANCE TILE
+////////////////////////////////////////////////////////////////////////
 
 class _AttendanceTile extends StatelessWidget {
   final int day;
@@ -260,27 +379,22 @@ class _AttendanceTile extends StatelessWidget {
         color = Colors.green;
         icon = Icons.check_circle;
         break;
-      case "ABSENT":
-        color = Colors.red;
-        icon = Icons.cancel;
-        break;
-      default:
+
+      case "HALF":
         color = Colors.orange;
         icon = Icons.timelapse;
+        break;
+
+      default:
+        color = Colors.red;
+        icon = Icons.cancel;
     }
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.15),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(
-          "Day $day",
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        leading: Icon(icon, color: color),
+        title: Text("Day $day"),
         trailing: Text(
           status,
           style: TextStyle(color: color, fontWeight: FontWeight.bold),

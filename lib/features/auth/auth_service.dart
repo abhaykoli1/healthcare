@@ -61,13 +61,22 @@ class AuthService {
       throw Exception("User role not found");
     }
     if (data["role"] == "DOCTOR") {
-      Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const DoctorProfilePage()));
+      Navigator.pushReplacement(
+        context,
+        CupertinoPageRoute(builder: (context) => const DoctorProfilePage()),
+      );
     } else if (data["role"] == "NURSE") {
       Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-    } else if(data["role"] == "PATIENT"){
-      Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const PataintProfilePage()));
-    } else if(data["role"] == "STAFF"){
-      Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => StaffProfileComplaintsPage()), );
+    } else if (data["role"] == "PATIENT") {
+      Navigator.pushReplacement(
+        context,
+        CupertinoPageRoute(builder: (context) => const PataintProfilePage()),
+      );
+    } else if (data["role"] == "STAFF") {
+      Navigator.pushReplacement(
+        context,
+        CupertinoPageRoute(builder: (context) => StaffProfileComplaintsPage()),
+      );
     }
   }
 }

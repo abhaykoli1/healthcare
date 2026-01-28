@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/routes/app_routes.dart';
 
 class StaffProfileComplaintsPage extends StatefulWidget {
@@ -49,14 +50,11 @@ class _StaffProfileComplaintsPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F7FB),
+      backgroundColor: AppTheme.primarylight,
       appBar: AppBar(
         title: const Text("My Profile & Complaints"),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _reload,
-          )
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _reload),
         ],
       ),
       body: SingleChildScrollView(
@@ -93,10 +91,11 @@ class _StaffProfileComplaintsPageState
                             p["is_active"] ? "ACTIVE" : "INACTIVE",
                             style: const TextStyle(color: Colors.white),
                           ),
-                          backgroundColor:
-                              p["is_active"] ? Colors.green : Colors.red,
+                          backgroundColor: p["is_active"]
+                              ? Colors.green
+                              : Colors.red,
                         ),
-                      )
+                      ),
                     ],
                   ),
                 );
@@ -174,18 +173,22 @@ class _StaffProfileComplaintsPageState
           child: Container(
             height: 50,
             width: double.infinity,
-             decoration: BoxDecoration(
-             color: Colors.orange,
-             borderRadius: BorderRadius.circular(20)
-             ),
+            decoration: BoxDecoration(
+              color: Colors.orange,
+              borderRadius: BorderRadius.circular(20),
+            ),
             alignment: Alignment.center,
             child: const Text(
               "Logout",
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
-      )
+      ),
     );
   }
 
@@ -196,8 +199,7 @@ class _StaffProfileComplaintsPageState
         children: [
           SizedBox(
             width: 110,
-            child:
-                Text(label, style: const TextStyle(color: Colors.grey)),
+            child: Text(label, style: const TextStyle(color: Colors.grey)),
           ),
           Expanded(
             child: Text(
@@ -248,7 +250,7 @@ class _ComplaintCard extends StatelessWidget {
             color: Colors.black.withOpacity(0.05),
             blurRadius: 6,
             offset: const Offset(0, 3),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -277,8 +279,7 @@ class _ComplaintCard extends StatelessWidget {
                       color: Colors.orange,
                       onTap: onAccept,
                     ),
-                  if (status != "RESOLVED")
-                    const SizedBox(width: 8),
+                  if (status != "RESOLVED") const SizedBox(width: 8),
                   if (status != "RESOLVED")
                     _ActionBtn(
                       text: "Resolve",
@@ -286,9 +287,9 @@ class _ComplaintCard extends StatelessWidget {
                       onTap: onResolve,
                     ),
                 ],
-              )
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -313,8 +314,7 @@ class _ActionBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(8),
@@ -322,9 +322,10 @@ class _ActionBtn extends StatelessWidget {
         child: Text(
           text,
           style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold),
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -351,15 +352,16 @@ class _Card extends StatelessWidget {
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           child,
         ],

@@ -44,12 +44,15 @@ class _SOSPageState extends State<SOSPage> {
     return Scaffold(
       backgroundColor: AppTheme.primarylight,
       appBar: AppBar(
-        title: const Text("Emergency SOS"),
+        title: const Text(
+          "Emergency SOS",
+          style: TextStyle(color: Colors.white),
+        ),
         centerTitle: true,
         backgroundColor: Colors.red,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           children: [
             /// 🔴 WARNING
@@ -78,14 +81,14 @@ class _SOSPageState extends State<SOSPage> {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
 
             /// 🧑‍⚕️ PATIENT SELECT
             GestureDetector(
               onTap: loadingPatients ? null : _openPatientSearch,
               child: Card(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -113,23 +116,48 @@ class _SOSPageState extends State<SOSPage> {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
 
             /// 📝 MESSAGE
             Card(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(10),
                 child: TextField(
                   controller: ctrl,
                   maxLines: 4,
                   decoration: InputDecoration(
                     hintText:
                         "Describe the emergency (accident, threat, medical issue...)",
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 14,
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade100, // 🔥 background
+                    contentPadding: const EdgeInsets.all(14),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppTheme.primary,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Colors.red,
+                        width: .5,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppTheme.primary,
+                        width: 1,
+                      ),
                     ),
                   ),
                 ),
@@ -149,7 +177,7 @@ class _SOSPageState extends State<SOSPage> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                icon: const Icon(Icons.sos, size: 28),
+                // icon: const Icon(Icons.sos, size: 28),
                 label: loading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(

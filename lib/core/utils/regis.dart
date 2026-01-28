@@ -1,19 +1,23 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:healthcare/core/lang/language_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
+import 'package:healthcare/core/lang/app_strings.dart';
 
-class NurseSelfSignupPage extends StatefulWidget {
+class NurseSelfSignupPage extends ConsumerStatefulWidget {
   const NurseSelfSignupPage({super.key});
 
   @override
-  State<NurseSelfSignupPage> createState() => _NurseSelfSignupPageState();
+  ConsumerState<NurseSelfSignupPage> createState() =>
+      _NurseSelfSignupPageState();
 }
 
-class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
+class _NurseSelfSignupPageState extends ConsumerState<NurseSelfSignupPage> {
   final _formKey = GlobalKey<FormState>();
   final picker = ImagePicker();
 
@@ -99,6 +103,10 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
       return;
     }
 
+    if (profilePhoto == null) {
+      _snack("Please upload profile photo", error: true);
+      return;
+    }
     setState(() => loading = true);
 
     try {
@@ -154,7 +162,29 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.primarylight,
-      appBar: AppBar(title: const Text("Nurse Self Signup"), centerTitle: true),
+      appBar: AppBar(
+        title: Text(T.t(ref, "title")),
+        centerTitle: true,
+
+        actions: [
+          PopupMenuButton<Locale>(
+            icon: const Icon(Icons.language),
+            onSelected: (locale) {
+              ref.read(languageProvider.notifier).state = locale;
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: Locale('en'), child: Text("English")),
+              PopupMenuItem(value: Locale('hi'), child: Text("हिन्दी")),
+              PopupMenuItem(value: Locale('gu'), child: Text("ગુજરાતી")),
+              PopupMenuItem(value: Locale('bn'), child: Text("বাংলা")),
+              PopupMenuItem(value: Locale('mr'), child: Text("मराठी")),
+              PopupMenuItem(value: Locale('ta'), child: Text("தமிழ்")),
+              PopupMenuItem(value: Locale('te'), child: Text("తెలుగు")),
+              PopupMenuItem(value: Locale('kn'), child: Text("ಕನ್ನಡ")),
+            ],
+          ),
+        ],
+      ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -181,19 +211,19 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
               const SizedBox(height: 20),
 
               _SectionCard(
-                title: "Personal Information",
+                title: T.t(ref, "personal_info"),
                 icon: Icons.person,
                 child: Column(
                   children: [
-                    _field(phoneCtrl, "Phone", TextInputType.phone),
+                    _field(phoneCtrl, T.t(ref, "phone"), TextInputType.phone),
                     _field(
                       otherPhoneCtrl,
                       "Alternate Phone",
                       TextInputType.phone,
                     ),
-                    _field(nameCtrl, "Full Name"),
+                    _field(nameCtrl, T.t(ref, "name")),
                     _field(fatherCtrl, "Father Name"),
-                    _field(emailCtrl, "Email"),
+                    _field(emailCtrl, T.t(ref, "email")),
                   ],
                 ),
               ),
@@ -273,8 +303,8 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
             onPressed: loading ? null : submit,
             child: loading
                 ? const CircularProgressIndicator(color: Colors.white)
-                : const Text(
-                    "Submit Application",
+                : Text(
+                    T.t(ref, "Submit Application"),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
           ),
@@ -307,7 +337,7 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
             Expanded(
               child: Text(
                 joiningDate == null
-                    ? "Select Joining Date"
+                    ? T.t(ref, "Select Joining Date")
                     : DateFormat("dd MMM yyyy").format(joiningDate!),
               ),
             ),

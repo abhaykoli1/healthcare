@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 import '../../routes/app_routes.dart';
 import 'auth_service.dart';
 
@@ -18,6 +19,8 @@ class _OtpPageState extends State<OtpPage> {
     final phone = ModalRoute.of(context)!.settings.arguments as String;
 
     return Scaffold(
+      backgroundColor: AppTheme.primarylight,
+
       appBar: AppBar(title: const Text("Verify OTP")),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -45,9 +48,7 @@ class _OtpPageState extends State<OtpPage> {
                     : () async {
                         if (otpCtrl.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Enter OTP"),
-                            ),
+                            const SnackBar(content: Text("Enter OTP")),
                           );
                           return;
                         }
@@ -58,12 +59,10 @@ class _OtpPageState extends State<OtpPage> {
                           await AuthService.verifyOtp(
                             phone,
                             otpCtrl.text,
-                            context
+                            context,
                           );
 
                           if (!mounted) return;
-                          
-                          
                         } catch (e) {
                           if (!mounted) return;
 

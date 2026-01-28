@@ -3,8 +3,9 @@ import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/features/doctor/doctor_prescribe.dart';
-
+import 'package:intl/intl.dart';
 
 class PatientDetailPage extends StatefulWidget {
   final String patientId;
@@ -29,9 +30,9 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: const Color(0xffF5F7FB),
+        backgroundColor: AppTheme.primarylight,
         appBar: AppBar(
-          title: const Text("🧑‍⚕️ Patient Details"),
+          title: const Text("🧑‍⚕️ Patient Details doc"),
           bottom: const TabBar(
             tabs: [
               Tab(text: "Details"),
@@ -78,24 +79,38 @@ class _DetailsTab extends StatelessWidget {
         /// BASIC INFO
         _Card(
           title: "👤 Basic Information",
-          child: GridView.count(
-            crossAxisCount: 2,
+          child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 3,
-            children: [
-              _info("Name", patient["name"]),
-              _info("Phone", patient["phone"]),
-              _info("Age", patient["age"]),
-              _info("Gender", patient["gender"]),
-              _info("Address", patient["address"]),
-              _info("Service Start", patient["service_start"]),
-            ],
+            itemCount: 6,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 20,
+              mainAxisExtent: 60,
+            ),
+            itemBuilder: (_, i) {
+              final items = [
+                _info("Name", patient["name"]),
+                _info("Phone", patient["phone"]),
+                _info("Age", patient["age"]),
+                _info("Gender", patient["gender"]),
+                _info("Address", patient["address"]),
+                _info("Service Start", patient["service_start"]),
+              ];
+              return items[i];
+            },
           ),
         ),
         GestureDetector(
-          onTap: (){
-            Navigator.push(context, CupertinoPageRoute(builder: (context) => PrescribeMedicinePage(patientId: patient["id"],)));
+          onTap: () {
+            Navigator.push(
+              context,
+              CupertinoPageRoute(
+                builder: (context) =>
+                    PrescribeMedicinePage(patientId: patient["id"]),
+              ),
+            );
           },
           child: Container(
             height: 40,
@@ -116,6 +131,7 @@ class _DetailsTab extends StatelessWidget {
           ),
         ),
         SizedBox(height: 16),
+
         /// NURSE VISITS
         _Card(
           title: "👩‍⚕️ Nurse Visits",
@@ -148,7 +164,6 @@ class _DetailsTab extends StatelessWidget {
                   }).toList(),
                 ),
         ),
-        
       ],
     );
   }
@@ -166,12 +181,78 @@ class _VitalsTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       itemCount: vitals.length,
       itemBuilder: (_, i) {
-        final v = vitals[i];
+        final v = Map<String, dynamic>.from(vitals[i]);
+
+        print("VITAL DATA => $v"); // 👈 ADD THIS
+
+        final time = v["time"] ?? v["recorded_at"];
+
+        Widget item(String label, dynamic value) {
+          if (value == null || value.toString().isEmpty) {
+            return const SizedBox();
+          }
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                /// 🔹 KEY (bold left)
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+
+                /// 🔹 VALUE (right aligned)
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    value.toString(),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        String _formatTime(dynamic time) {
+          if (time == null) return "-";
+
+          final dt = DateTime.parse(time.toString()).toLocal();
+
+          return DateFormat("dd MMM yyyy • hh:mm a").format(dt);
+        }
+
         return _Card(
-          title: "❤️ ${v["recorded_at"]}",
-          child: Text(
-            "BP: ${v["bp"]}, Pulse: ${v["pulse"]}, "
-            "SpO2: ${v["spo2"]}, Temp: ${v["temperature"]}",
+          title: "❤️ ${_formatTime(time)}",
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              item("BP", v["bp"]),
+              item("Pulse", v["pulse"]),
+              item("SpO₂", v["spo2"]),
+              item("Temp (°F)", v["temperature"]),
+              item("O₂ Level", v["o2_level"]),
+              item("RBS", v["rbs"]),
+
+              item("BiPAP", v["bipap_ventilator"]),
+              item("IV Fluids", v["iv_fluids"]),
+              item("Suction", v["suction"]),
+              item("Feeding Tube", v["feeding_tube"]),
+
+              item("Vomit/Aspirate", v["vomit_aspirate"]),
+              item("Urine", v["urine"]),
+              item("Stool", v["stool"]),
+
+              item("Notes", v["other"]),
+            ],
           ),
         );
       },
@@ -192,11 +273,48 @@ class _MedicationsTab extends StatelessWidget {
       itemCount: meds.length,
       itemBuilder: (_, i) {
         final m = meds[i];
+
+        final notes = (m["notes"] ?? []) as List;
+
         return _Card(
           title: "💊 ${m["medicine"]}",
-          child: Text(
-            "${m["dosage"]} | ${m["timing"].join(", ")}\n"
-            "Duration: ${m["duration"]} days | ₹${m["price"] ?? "-"}",
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// 🔹 Basic info
+              Text(
+                "${m["dosage"]} | ${m["timing"].join(", ")}",
+                style: const TextStyle(fontSize: 14),
+              ),
+
+              const SizedBox(height: 4),
+
+              Text(
+                "Duration: ${m["duration"]} days | ₹${m["price"] ?? "-"}",
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+
+              /// 🔹 Notes section
+              if (notes.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                const Divider(),
+                const SizedBox(height: 6),
+
+                const Text(
+                  "Instructions",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+
+                const SizedBox(height: 6),
+
+                ...notes.map(
+                  (n) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text("• $n", style: const TextStyle(fontSize: 13)),
+                  ),
+                ),
+              ],
+            ],
           ),
         );
       },
@@ -212,11 +330,12 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: Colors.grey.shade50,
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
+      elevation: .5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -233,15 +352,20 @@ class _Card extends StatelessWidget {
   }
 }
 
-Widget _info(String label, dynamic val) => Padding(
-  padding: const EdgeInsets.only(bottom: 8),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: const TextStyle(color: Colors.grey)),
-      Text(val?.toString() ?? "-", style: const TextStyle(fontSize: 15)),
-    ],
-  ),
+Widget _info(String label, dynamic val) => Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+    const SizedBox(height: 2),
+    Text(
+      val?.toString() ?? "-",
+      maxLines: 2, // 👈 important
+      softWrap: true,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(fontSize: 14),
+    ),
+  ],
 );
 
 Widget _empty() => const Center(

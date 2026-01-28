@@ -6,29 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
-import 'package:healthcare/features/duty/consent_service.dart';
-import 'package:healthcare/features/duty/nurse_consent_page.dart';
 import 'package:healthcare/features/duty/nurse_profile.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'dashboard_service.dart';
-
+import 'package:healthcare/features/duty/consent_service.dart';
 import 'profile_header_section.dart';
 import 'active_visits_section.dart';
 import 'weekly_work_graph.dart';
 import 'action_cards_section.dart';
-
-class ConsentService {
-  static Future<Map<String, dynamic>> checkConsentStatus() async {
-    final res = await ApiClient.get("/nurse/consent/status");
-    return res;
-  }
-
-  static Future<bool> isFullyVerified() async {
-    final data = await checkConsentStatus();
-    return data["signed"] == true;
-  }
-}
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -49,45 +35,39 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _bootstrap() async {
     try {
-      /// 🔍 Step 1: Check consent + verification
-      final consentData = await ConsentService.checkConsentStatus();
-
+      /// 🔍 Step 1: Get full consent data
+      final consentData = await ConsentService.getConsentStatus();
       final isVerified = consentData["signed"] == true;
 
-      /// ❌ If ANY requirement missing → force consent page
+      /// ❌ If not verified → force consent page
       if (!isVerified && mounted) {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => NurseConsentPage(
-              statusData: consentData, // 🔥 pass full reason
-            ),
+            builder: (_) => NurseConsentPage(statusData: consentData),
             fullscreenDialog: true,
           ),
         );
 
-        /// ❌ Nurse came back without completing flow
-        if (result != true) {
-          return;
-        }
+        if (result != true) return;
 
-        /// 🔁 Re-check status after consent flow
-        final recheck = await ConsentService.checkConsentStatus();
+        /// 🔁 Re-check after signing
+        final recheck = await ConsentService.getConsentStatus();
         if (recheck["signed"] != true) {
           _showError("Verification still pending");
           return;
         }
       }
 
-      /// ✅ All conditions passed → load dashboard
-      if (mounted) {
-        setState(() {
-          _dashboardFuture = DashboardService.fetchDashboard();
-          _checkingConsent = false;
-        });
-      }
+      /// ✅ Load dashboard
+      if (!mounted) return;
+      setState(() {
+        _dashboardFuture = DashboardService.fetchDashboard();
+        _checkingConsent = false;
+      });
     } catch (e) {
-      _checkingConsent = false;
+      if (!mounted) return;
+      setState(() => _checkingConsent = false);
       _showError(e.toString());
     }
   }
@@ -112,7 +92,10 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
 
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text("Logout"),
           ),
@@ -158,8 +141,13 @@ class _DashboardPageState extends State<DashboardPage> {
               );
             }
 
+            if (!snapshot.hasData || snapshot.data == null) {
+              return const Center(child: Text("No dashboard data"));
+            }
             final data = snapshot.data!;
-            final nurse = data["nurse"];
+            final Map<String, dynamic> nurse =
+                (data["nurse"] as Map<String, dynamic>?) ?? {};
+            print(nurse);
 
             return RefreshIndicator(
               onRefresh: () async {
@@ -183,10 +171,12 @@ class _DashboardPageState extends State<DashboardPage> {
                           );
                         },
                         child: ProfileHeader(
-                          name: nurse["name"],
-                          ward: nurse["nurse_type"],
-                          status: nurse["status"],
-                          workedTime: nurse["worked_time"],
+                          name: nurse["name"] ?? "N/A",
+                          profile: nurse["profile"] ?? "",
+                          // ward: "1",
+                          nurseType: nurse["nurse_type"] ?? "-",
+                          status: nurse["status"] ?? "Unknown",
+                          workedTime: nurse["worked_time"]?.toString() ?? "0",
                         ),
                       ),
                     ),
@@ -209,12 +199,15 @@ class _DashboardPageState extends State<DashboardPage> {
                   /// ⚡ ACTIONS
                   _Section(
                     title: "Quick Actions",
-                    child: ActionCardsSection(staffId: nurse["nurse_id"]),
+                    child: ActionCardsSection(
+                      staffId: nurse["nurse_id"] ?? "",
+                      status: nurse["status"] ?? "Unknown",
+                    ),
                   ),
 
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                       child: SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -261,15 +254,15 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             child,
           ],
         ),
@@ -297,8 +290,10 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
       widget.statusData["police_verified"] == "CLEAR" &&
       widget.statusData["aadhaar_verified"] == true;
 
-  Future<void> pickSignature() async {
-    final picked = await _picker.pickImage(source: ImageSource.gallery);
+  // 👇👇 YAHAN LAGANA HAI
+  Future<void> pickSignature(ImageSource source) async {
+    final picked = await _picker.pickImage(source: source, imageQuality: 80);
+
     if (picked != null) {
       setState(() {
         signatureFile = File(picked.path);
@@ -326,21 +321,27 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
       final bytes = await signatureFile!.readAsBytes();
       final base64Signature = "data:image/png;base64,${base64Encode(bytes)}";
 
-      final res = await ApiClient.post("/nurse/consent/sign", {
-        "confidentiality_accepted": true,
-        "no_direct_payment_accepted": true,
-        "police_termination_accepted": true,
-        "signature_image": base64Signature,
-      });
+      // final res = await ApiClient.post("/nurse/consent/sign", {
+      //   "confidentiality_accepted": true,
+      //   "no_direct_payment_accepted": true,
+      //   "police_termination_accepted": true,
+      //   "signature_image": base64Signature,
+      // });
+      await ConsentService.signConsent(
+        confidentiality: true,
+        noDirectPayment: true,
+        policeTermination: true,
+        signatureImage: base64Signature,
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res["message"] ?? "Consent signed successfully!"),
+        const SnackBar(
+          content: Text("Consent signed successfully!"),
           backgroundColor: Colors.green,
         ),
       );
 
-      Navigator.pop(context, true);
+      Navigator.pushReplacementNamed(context, "/login");
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -353,14 +354,56 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
     }
   }
 
+  void showSignatureSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Upload Signature",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text("Camera"),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickSignature(ImageSource.camera);
+                },
+              ),
+
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text("Gallery"),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickSignature(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("👩‍⚕️ Staff Legal Declaration & Undertaking"),
-        leading: Container(),
+        automaticallyImplyLeading: true,
       ),
-      backgroundColor: const Color(0xffF5F7FB),
+      backgroundColor: AppTheme.primarylight,
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -369,7 +412,8 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
           children: [
             // ================= LEGAL DECLARATION =================
             Card(
-              elevation: 2,
+              color: Colors.grey.shade50,
+              elevation: .5,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -436,7 +480,8 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
 
             // ================= CONFIDENTIALITY =================
             Card(
-              elevation: 2,
+              color: Colors.grey.shade50,
+              elevation: .5,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -455,7 +500,8 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
 
             // ================= SIGNATURE UPLOAD =================
             Card(
-              elevation: 2,
+              color: Colors.grey.shade50,
+              elevation: .5,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -472,7 +518,7 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
                     ),
                     const SizedBox(height: 12),
                     GestureDetector(
-                      onTap: pickSignature,
+                      onTap: showSignatureSourceSheet,
                       child: Container(
                         height: 150,
                         width: double.infinity,

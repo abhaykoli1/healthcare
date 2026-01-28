@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import '../../core/network/api_client.dart';
 
 final staffProvider =
@@ -15,7 +16,7 @@ class StaffNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>?>> {
     final res = await ApiClient.post("/staff/apply", data);
     state = AsyncData(res);
   }
-
+  
   /// Fetch staff profile (GET /staff/{id})
   /// ⚠️ Backend endpoint required later
   Future<void> fetch(String id) async {

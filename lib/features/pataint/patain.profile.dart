@@ -2,13 +2,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
+import 'package:healthcare/features/auth/about_us_page.dart';
 import 'package:healthcare/features/doctor/doctor_prescribe.dart';
 import 'package:healthcare/features/pataint/myComplaint.page.dart';
+import 'package:healthcare/features/pataint/patient_update_profile_page.dart';
 import 'package:healthcare/routes/app_routes.dart';
 import 'package:intl/intl.dart';
 
 class PataintProfilePage extends StatefulWidget {
-
   const PataintProfilePage({super.key});
 
   @override
@@ -29,10 +31,22 @@ class _PataintProfilePageState extends State<PataintProfilePage> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: const Color(0xffF5F7FB),
+        backgroundColor: AppTheme.primarylight,
         appBar: AppBar(
           leading: Container(),
           title: const Text("🧑‍⚕️ Patient Details"),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.info_outline), // about icon
+              tooltip: "About Us",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AboutUsPage()),
+                );
+              },
+            ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: "Details"),
@@ -59,33 +73,38 @@ class _PataintProfilePageState extends State<PataintProfilePage> {
           },
         ),
         bottomSheet: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: GestureDetector(
-          onTap: () async {
-            await TokenStorage.clearToken();
-            await TokenStorage.clearRole();
-            if (!mounted) return;
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.login,
-              (route) => false,
-            );
-          },
-          child: Container(
-            height: 50,
-            width: double.infinity,
-             decoration: BoxDecoration(
-             color: Colors.orange,
-             borderRadius: BorderRadius.circular(20)
-             ),
-            alignment: Alignment.center,
-            child: const Text(
-              "Logout",
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 20),
+
+          child: GestureDetector(
+            onTap: () async {
+              await TokenStorage.clearToken();
+              await TokenStorage.clearRole();
+              if (!mounted) return;
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.login,
+                (route) => false,
+              );
+            },
+            child: Container(
+              height: 50,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              alignment: Alignment.center,
+              child: const Text(
+                "Logout",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ),
-      )
       ),
     );
   }
@@ -106,25 +125,73 @@ class _DetailsTab extends StatelessWidget {
       children: [
         /// BASIC INFO
         _Card(
-          title: "👤 Basic Information",
-          child: GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _info("Name", patient["name"]),
-              _info("Phone", patient["phone"]),
-              _info("Age", patient["age"]),
-              _info("Gender", patient["gender"]),
-              _info("Address", patient["address"]),
-              _info("Service Start", patient["service_start"]),
+              // =========================
+              // 🔥 HEADER (Title + Edit)
+              // =========================
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "👤 Basic Information",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+
+                  // ✅ EDIT BUTTON
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 20),
+                    tooltip: "Edit Profile",
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => PatientUpdateProfilePage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // =========================
+              // GRID
+              // =========================
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 6,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 20,
+                  mainAxisExtent: 60,
+                ),
+                itemBuilder: (_, i) {
+                  final items = [
+                    _info("Name", patient["name"]),
+                    _info("Phone", patient["phone"]),
+                    _info("Age", patient["age"]),
+                    _info("Gender", patient["gender"]),
+                    _info("Address", patient["address"]),
+                    _info("Service Start", patient["service_start"]),
+                  ];
+                  return items[i];
+                },
+              ),
             ],
           ),
         ),
+        SizedBox(height: 16),
         GestureDetector(
-          onTap: (){
-            Navigator.push(context, CupertinoPageRoute(builder: (context) => MyComplaintsPage()));
+          onTap: () {
+            Navigator.push(
+              context,
+              CupertinoPageRoute(builder: (context) => MyComplaintsPage()),
+            );
           },
           child: Container(
             height: 40,
@@ -145,6 +212,7 @@ class _DetailsTab extends StatelessWidget {
           ),
         ),
         SizedBox(height: 16),
+
         /// NURSE VISITS
         _Card(
           title: "👩‍⚕️ Nurse Visits",
@@ -177,7 +245,6 @@ class _DetailsTab extends StatelessWidget {
                   }).toList(),
                 ),
         ),
-        
       ],
     );
   }
@@ -195,12 +262,78 @@ class _VitalsTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       itemCount: vitals.length,
       itemBuilder: (_, i) {
-        final v = vitals[i];
+        final v = Map<String, dynamic>.from(vitals[i]);
+
+        print("VITAL DATA => $v"); // 👈 ADD THIS
+
+        final time = v["time"] ?? v["recorded_at"];
+
+        Widget item(String label, dynamic value) {
+          if (value == null || value.toString().isEmpty) {
+            return const SizedBox();
+          }
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                /// 🔹 KEY (bold left)
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+
+                /// 🔹 VALUE (right aligned)
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    value.toString(),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        String _formatTime(dynamic time) {
+          if (time == null) return "-";
+
+          final dt = DateTime.parse(time.toString()).toLocal();
+
+          return DateFormat("dd MMM yyyy • hh:mm a").format(dt);
+        }
+
         return _Card(
-          title: "❤️ ${v["recorded_at"]}",
-          child: Text(
-            "BP: ${v["bp"]}, Pulse: ${v["pulse"]}, "
-            "SpO2: ${v["spo2"]}, Temp: ${v["temperature"]}",
+          title: "❤️ ${_formatTime(time)}",
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              item("BP", v["bp"]),
+              item("Pulse", v["pulse"]),
+              item("SpO₂", v["spo2"]),
+              item("Temp (°F)", v["temperature"]),
+              item("O₂ Level", v["o2_level"]),
+              item("RBS", v["rbs"]),
+
+              item("BiPAP", v["bipap_ventilator"]),
+              item("IV Fluids", v["iv_fluids"]),
+              item("Suction", v["suction"]),
+              item("Feeding Tube", v["feeding_tube"]),
+
+              item("Vomit/Aspirate", v["vomit_aspirate"]),
+              item("Urine", v["urine"]),
+              item("Stool", v["stool"]),
+
+              item("Notes", v["other"]),
+            ],
           ),
         );
       },
@@ -221,11 +354,48 @@ class _MedicationsTab extends StatelessWidget {
       itemCount: meds.length,
       itemBuilder: (_, i) {
         final m = meds[i];
+
+        final notes = (m["notes"] ?? []) as List;
+
         return _Card(
           title: "💊 ${m["medicine"]}",
-          child: Text(
-            "${m["dosage"]} | ${m["timing"].join(", ")}\n"
-            "Duration: ${m["duration"]} days | ₹${m["price"] ?? "-"}",
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// 🔹 Basic info
+              Text(
+                "${m["dosage"]} | ${m["timing"].join(", ")}",
+                style: const TextStyle(fontSize: 14),
+              ),
+
+              const SizedBox(height: 4),
+
+              Text(
+                "Duration: ${m["duration"]} days | ₹${m["price"] ?? "-"}",
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+
+              /// 🔹 Notes section
+              if (notes.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                const Divider(),
+                const SizedBox(height: 6),
+
+                const Text(
+                  "Instructions",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+
+                const SizedBox(height: 6),
+
+                ...notes.map(
+                  (n) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text("• $n", style: const TextStyle(fontSize: 13)),
+                  ),
+                ),
+              ],
+            ],
           ),
         );
       },
@@ -234,26 +404,35 @@ class _MedicationsTab extends StatelessWidget {
 }
 
 class _Card extends StatelessWidget {
-  final String title;
+  final String? title; // ✅ optional now
   final Widget child;
-  const _Card({required this.title, required this.child});
+
+  const _Card({this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
+      elevation: .5,
+      color: Colors.grey.shade50,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            const SizedBox(height: 12),
+            /// 🔥 show title only if provided
+            if (title != null) ...[
+              Text(
+                title!,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             child,
           ],
         ),
@@ -262,15 +441,20 @@ class _Card extends StatelessWidget {
   }
 }
 
-Widget _info(String label, dynamic val) => Padding(
-  padding: const EdgeInsets.only(bottom: 8),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: const TextStyle(color: Colors.grey)),
-      Text(val?.toString() ?? "-", style: const TextStyle(fontSize: 15)),
-    ],
-  ),
+Widget _info(String label, dynamic val) => Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+    const SizedBox(height: 2),
+    Text(
+      val?.toString() ?? "-",
+      maxLines: 2, // 👈 important
+      softWrap: true,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(fontSize: 14),
+    ),
+  ],
 );
 
 Widget _empty() => const Center(

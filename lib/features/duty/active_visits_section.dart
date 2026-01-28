@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:healthcare/core/theme/app_theme.dart';
 
 class ActiveVisitsSection extends StatelessWidget {
   final List visits;
@@ -7,6 +10,7 @@ class ActiveVisitsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print("visits: $visits");
     if (visits.isEmpty) {
       return const Center(
         child: Padding(
@@ -24,7 +28,7 @@ class ActiveVisitsSection extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Colors.grey.shade50,
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
@@ -46,7 +50,7 @@ class ActiveVisitsSection extends StatelessWidget {
                 ),
                 child: Icon(
                   Icons.local_hospital,
-                  color: critical ? Colors.red : Colors.blue,
+                  color: critical ? Colors.red : AppTheme.primary,
                 ),
               ),
 
@@ -56,13 +60,31 @@ class ActiveVisitsSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(v["patient_name"],
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(
+                      v["patient_name"],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text("${v["ward"]} • ${v["room_no"]}",
-                        style:
-                            const TextStyle(color: Colors.grey, fontSize: 13)),
+                    if (v["dutyLocation"] == "HOSPITAL")
+                      Text(
+                        "ward: ${v["ward"] ?? "-"} | Room: ${v["room_no"] ?? "-"}",
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      )
+                    else
+                      Text(
+                        "Home Visit" ,
+                        // v["address"] ?? "-",
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -70,7 +92,7 @@ class ActiveVisitsSection extends StatelessWidget {
               _Tag(
                 label: v["visit_type"],
                 color: critical ? Colors.red : Colors.green,
-              )
+              ),
             ],
           ),
         );
@@ -93,12 +115,14 @@ class _Tag extends StatelessWidget {
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label,
-          style: TextStyle(
-            color: color,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          )),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
