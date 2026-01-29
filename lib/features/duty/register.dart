@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:healthcare/features/duty/nurse_consent_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -29,7 +30,7 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
   DateTime? joiningDate;
 
   File? profilePhoto;
-  File? digitalSignature;
+  // File? digitalSignature;
   List<File> qualificationDocs = [];
   List<File> experienceDocs = [];
 
@@ -110,9 +111,9 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
       if (profilePhoto != null) {
         profilePhotoPath = await FileUploadService.uploadFile(profilePhoto!);
       }
-      if (digitalSignature != null) {
-        signaturePath = await FileUploadService.uploadFile(digitalSignature!);
-      }
+      // if (digitalSignature != null) {
+      //   signaturePath = await FileUploadService.uploadFile(digitalSignature!);
+      // }
 
       for (final f in qualificationDocs) {
         qualificationPaths.add(await FileUploadService.uploadFile(f));
@@ -136,10 +137,13 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
         "experience_docs": experiencePaths,
       };
 
-      await ApiClient.post("/nurse/self-signup", payload);
+      final res = await ApiClient.post("/nurse/self-signup", payload);
+      // _snack("Signup successful. Await admin approval ✅");
 
-      _snack("Signup successful. Await admin approval ✅");
-      Navigator.pop(context, true);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => NurseConsentPage(statusData: res)),
+      );
     } catch (e) {
       print("SIGNUP ERROR: $e");
       _snack("Signup failed: $e", error: true);
@@ -236,14 +240,14 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
                 icon: Icons.upload_file,
                 child: Column(
                   children: [
-                    _UploadTile(
-                      title: "Digital Signature",
-                      count: digitalSignature == null ? 0 : 1,
-                      onTap: () async {
-                        digitalSignature = await _pickSingle(context);
-                        setState(() {});
-                      },
-                    ),
+                    // _UploadTile(
+                    //   title: "Digital Signature",
+                    //   count: digitalSignature == null ? 0 : 1,
+                    //   onTap: () async {
+                    //     digitalSignature = await _pickSingle(context);
+                    //     setState(() {});
+                    //   },
+                    // ),
                     _UploadTile(
                       title: "Qualifications",
                       count: qualificationDocs.length,

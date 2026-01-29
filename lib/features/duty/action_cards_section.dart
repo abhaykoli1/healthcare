@@ -83,7 +83,7 @@ class _PunchCardState extends State<PunchCard> {
   Timer? _locationTimer;
 
   void startLiveTracking() {
-    if (_locationTimer != null) return; // 🔐 already running
+    if (_locationTimer != null) return;
 
     sendLiveLocation();
 

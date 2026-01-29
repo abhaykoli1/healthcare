@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
 
+final GlobalKey<NavigatorState> appNavigatorKey =
+    GlobalKey<NavigatorState>();
+
 void main() {
   runApp(const ProviderScope(child: HospitalApp()));
 }
@@ -13,6 +16,7 @@ class HospitalApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+       navigatorKey: appNavigatorKey,
       title: 'Hospital Management',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

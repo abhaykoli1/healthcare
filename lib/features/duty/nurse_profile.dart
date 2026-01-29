@@ -26,6 +26,8 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
   Future<void> _fetchNurseDetail() async {
     try {
       final res = await ApiClient.get("/nurse/profile/me/json");
+
+      print(res);
       setState(() {
         data = res;
         loading = false;
@@ -164,19 +166,19 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.green.shade100,
+                                        color: Colors.green.shade500,
                                         borderRadius: BorderRadius.circular(28),
                                       ),
+
                                       child: const Text(
                                         "Aadhar Verified",
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
+                                          color: Colors.white,
                                         ),
                                       ),
                                     ),
-
                                   // 🔹 Second line (two badges)
                                   Wrap(
                                     spacing: 4,
@@ -193,7 +195,14 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
                                           ),
                                         ),
                                         child: Text(
-                                          nurse['verification_status'] ?? "N/A",
+                                          // nurse['verification_status'] ?? "N/A",
+                                          nurse['digital_signature_verify'] ==
+                                                  true
+                                              ? "Signed"
+                                              : nurse['digital_signature_verify'] ==
+                                                    false
+                                              ? "Unsigned"
+                                              : "N/A",
                                           style: const TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
@@ -201,6 +210,8 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
                                           ),
                                         ),
                                       ),
+
+                                      SizedBox(width: 0),
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 12,
@@ -265,83 +276,12 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
             ),
             const SizedBox(height: 20),
             // ===== KPI CARDS =====
-            _buildKpiSection(kpi),
+            _buildKpiSection(kpi, nurse),
             const SizedBox(height: 20),
 
             // ===== ATTENDANCE GRAPH CARD =====
             _buildAttendanceGraphSection(graph),
             const SizedBox(height: 20),
-
-            // ===== ATTENDANCE RECORDS CARD =====
-            // _buildSectionCard(
-            //   "🗓 Attendance Records",
-            //   List<Widget>.from(
-            //     attendanceRecords.map(
-            //       (a) => ListTile(
-            //         leading: Icon(
-            //           Icons.check_circle_outline,
-            //           color: AppTheme.primary,
-            //         ),
-            //         title: Text(a['date']),
-            //         subtitle: Text(
-            //           "In: ${a['check_in'] ?? '-'} | Out: ${a['check_out'] ?? '-'} | ${a['method']}",
-            //         ),
-            //       ),
-            //     ),
-            //   ),
-            // ),
-            // const SizedBox(height: 20),
-
-            // ===== RECENT VISITS CARD =====
-            // _buildSectionCard(
-            //   "🏥 Recent Visits",
-            //   List<Widget>.from(
-            //     visits.map(
-            //       (v) => ListTile(
-            //         leading: const Icon(
-            //           Icons.local_hospital,
-            //           color: Colors.green,
-            //         ),
-            //         title: Text(v['visit_type']),
-            //         subtitle: Text(
-            //           "Patient: ${v['patient_id']} | ${v['visit_time']}",
-            //         ),
-            //       ),
-            //     ),
-            //   ),
-            // ),
-            // const SizedBox(height: 20),
-
-            // ===== DOCUMENTS CARDS =====
-            // _buildSectionCard(
-            //   "📄 Qualification Documents",
-            //   List<Widget>.from(
-            //     (nurse['qualification_docs'] as List).map(
-            //       (doc) => ListTile(
-            //         leading: const Icon(
-            //           Icons.file_present,
-            //           color: Colors.orange,
-            //         ),
-            //         title: Text(doc),
-            //       ),
-            //     ),
-            //   ),
-            // ),
-            // const SizedBox(height: 10),
-            // _buildSectionCard(
-            //   "📄 Experience Documents",
-            //   List<Widget>.from(
-            //     (nurse['experience_docs'] as List).map(
-            //       (doc) => ListTile(
-            //         leading: const Icon(
-            //           Icons.file_present,
-            //           color: Colors.orange,
-            //         ),
-            //         title: Text(doc),
-            //       ),
-            //     ),
-            //   ),
-            // ),
           ],
         ),
       ),
@@ -378,7 +318,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
   //   );
   // }
 
-  Widget _buildKpiSection(Map kpi) {
+  Widget _buildKpiSection(Map kpi, nurse) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = (constraints.maxWidth - 12) / 2;
@@ -393,24 +333,25 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
             ),
             SizedBox(
               width: width,
-              child: _kpiCard("Salary", "₹ ${kpi['salary'] ?? 'N/A'}"),
+              child: _kpiCard("Credited Salary", "₹ ${kpi['salary'] ?? '0'}"),
             ),
+            // SizedBox(
+            //   width: width,
+            //   child: _kpiCard(
+            //     "Active Duty",
+            //     kpi['active_duty'] ?? "N/A",
+            //     extra: kpi['shift'],
+            //   ),
+            // ),
             SizedBox(
-              width: width,
-              child: _kpiCard(
-                "Active Duty",
-                kpi['active_duty'] ?? "N/A",
-                extra: kpi['shift'],
-              ),
-            ),
-            SizedBox(
-              width: width,
+              width: double.infinity,
               child: _kpiCard(
                 "Consent Status",
-                kpi['consent_status'] ?? "N/A",
-                // extra: kpi['consent_version'] != null
-                //     ? "Version ${kpi['consent_version']}"
-                //     : null,
+                nurse['digital_signature_verify'] == true
+                    ? "Signed"
+                    : nurse['digital_signature_verify'] == false
+                    ? "Unsigned"
+                    : "N/A",
               ),
             ),
           ],

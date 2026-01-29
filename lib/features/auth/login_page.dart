@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
+import 'package:healthcare/core/utils/app_message.dart';
 import 'package:healthcare/features/auth/auth_service.dart';
 import '../../routes/app_routes.dart';
 
@@ -13,6 +14,27 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final phoneCtrl = TextEditingController();
   bool loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (AppMessage.snack != null) {
+        _snack(AppMessage.snack!);
+        AppMessage.snack = null; // clear after show
+      }
+    });
+  }
+
+  void _snack(String msg, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: error ? Colors.red : Colors.green,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

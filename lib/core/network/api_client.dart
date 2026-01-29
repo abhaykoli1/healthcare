@@ -1,14 +1,19 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:healthcare/main.dart';
 import 'package:http/http.dart' as http;
 import 'package:healthcare/core/network/base.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
+
 import 'dart:io';
+import 'package:flutter/material.dart';
 
 class ApiClient {
   static const baseUrl = baseUrlApi;
 
-  /// 🔹 GET with token
+  /* =====================================================
+      🔹 GET
+  ===================================================== */
   static Future<dynamic> get(String path) async {
     final token = await TokenStorage.getToken();
 
@@ -19,12 +24,57 @@ class ApiClient {
         "Content-Type": "application/json",
       },
     );
+
     log(res.body);
     _handleError(res);
+
     return jsonDecode(res.body);
   }
 
-  /// 🔹 DELETE with token (supports body)
+  static Future<dynamic> getWithoutTokern(String path) async {
+    final token = await TokenStorage.getToken();
+
+    final res = await http.get(
+      Uri.parse("$baseUrl$path"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    log(res.body);
+    _handleError(res);
+
+    return jsonDecode(res.body);
+  }
+
+  /* =====================================================
+      🔹 UPLOAD FILE
+  ===================================================== */
+  static Future<Map<String, dynamic>> uploadFile(
+    String url,
+    File file, {
+    String folder = "documents",
+  }) async {
+    final token = await TokenStorage.getToken();
+
+    final request = http.MultipartRequest("POST", Uri.parse("$baseUrl$url"));
+
+    request.headers["Authorization"] = "Bearer $token";
+    request.fields["folder"] = folder;
+
+    request.files.add(await http.MultipartFile.fromPath("file", file.path));
+
+    final response = await request.send();
+    final res = await http.Response.fromStream(response);
+
+    log(res.body);
+
+    _handleError(res);
+
+    return jsonDecode(res.body);
+  }
+
+  /* =====================================================
+      🔹 DELETE
+  ===================================================== */
   static Future<dynamic> delete(String path, Map body) async {
     final token = await TokenStorage.getToken();
 
@@ -41,7 +91,6 @@ class ApiClient {
 
     _handleError(res);
 
-    // kuch DELETE APIs empty response bhejti hain
     if (res.body.isEmpty) {
       return {"success": true};
     }
@@ -49,7 +98,9 @@ class ApiClient {
     return jsonDecode(res.body);
   }
 
-  /// 🔹 PUT with token
+  /* =====================================================
+      🔹 PUT
+  ===================================================== */
   static Future<dynamic> put(String path, Map body) async {
     final token = await TokenStorage.getToken();
 
@@ -69,19 +120,9 @@ class ApiClient {
     return jsonDecode(res.body);
   }
 
-  /// 🔹 POST with token
-  // static Future<dynamic> post(String path, Map body) async {
-  //   final token = await TokenStorage.getToken();
-
-  //   final res = await http.post(
-  //     Uri.parse("$baseUrl$path"),
-  //     headers: {
-  //       "Authorization": "Bearer $token",
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: jsonEncode(body),
-  //   );
-
+  /* =====================================================
+      🔹 POST
+  ===================================================== */
   static Future<dynamic> post(String path, Map body) async {
     final token = await TokenStorage.getToken();
 
@@ -93,13 +134,47 @@ class ApiClient {
       },
       body: jsonEncode(body),
     );
+
     log(res.body);
+
     _handleError(res);
+
     return jsonDecode(res.body);
   }
 
-  /// 🔹 Central error handling
-  static void _handleError(http.Response res) {
+  /* =====================================================
+      🔥 CENTRAL ERROR HANDLER
+  ===================================================== */
+  static void _handleError(http.Response res) async {
+    /* ======================
+       🔴 AUTO LOGOUT ON 401
+    ====================== */
+    if (res.statusCode == 401) {
+      await TokenStorage.clearToken();
+
+      // show message
+      final ctx = appNavigatorKey.currentContext;
+      if (ctx != null) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(
+            content: Text("Session expired. Please login again"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+
+      // go login & clear stack
+      appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+        "/login",
+        (route) => false,
+      );
+
+      throw Exception("Session expired");
+    }
+
+    /* ======================
+       NORMAL ERRORS
+    ====================== */
     if (res.statusCode >= 400) {
       try {
         final body = jsonDecode(res.body);

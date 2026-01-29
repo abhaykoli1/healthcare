@@ -305,7 +305,7 @@ class _VisitCardState extends State<_VisitCard> {
                   : const SizedBox.shrink(),
 
               const Divider(height: 24),
-           
+
               /// MEDS
               if (meds.isNotEmpty) ...[
                 const Text(
@@ -321,14 +321,15 @@ class _VisitCardState extends State<_VisitCard> {
               /// BUTTONS
               Row(
                 children: [
-                  if (!completed)
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: widget.onComplete,
-                        child: const Text("Complete"),
-                      ),
+                  // if (!completed)
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: widget.onComplete,
+                      child: const Text("Complete"),
                     ),
-                  if (!completed) const SizedBox(width: 10),
+                  ),
+                  // if (!completed)
+                  const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(

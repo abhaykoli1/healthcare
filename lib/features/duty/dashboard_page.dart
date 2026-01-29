@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -6,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
+import 'package:healthcare/core/utils/app_message.dart';
+import 'package:healthcare/features/duty/nurse_consent_page.dart';
 import 'package:healthcare/features/duty/nurse_profile.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -33,40 +36,52 @@ class _DashboardPageState extends State<DashboardPage> {
     _bootstrap();
   }
 
+  void _snack(String msg, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: error ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
   Future<void> _bootstrap() async {
     try {
-      /// 🔍 Step 1: Get full consent data
-      final consentData = await ConsentService.getConsentStatus();
-      final isVerified = consentData["signed"] == true;
+      /* ==============================
+       1️⃣ Get nurse profile
+    ============================== */
+      final res = await ApiClient.get("/nurse/profile/me/json");
 
-      /// ❌ If not verified → force consent page
-      if (!isVerified && mounted) {
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => NurseConsentPage(statusData: consentData),
-            fullscreenDialog: true,
-          ),
+      final isSignatureVerified = res["nurse"]["digital_signature_verify"];
+
+      /* ==============================
+       2️⃣ If NOT verified → force logout
+    ============================== */
+
+      if (!isSignatureVerified && mounted) {
+        _snack(
+          "Verification pending ⚠️\nPlease wait for admin approval.\nYou will receive an email after verification.",
+          error: true,
         );
 
-        if (result != true) return;
+        await Future.delayed(const Duration(seconds: 0));
 
-        /// 🔁 Re-check after signing
-        final recheck = await ConsentService.getConsentStatus();
-        if (recheck["signed"] != true) {
-          _showError("Verification still pending");
-          return;
-        }
+        Navigator.pushReplacementNamed(context, "/login");
+        return;
       }
 
-      /// ✅ Load dashboard
+      /* ==============================
+       3️⃣ Load dashboard normally
+    ============================== */
       if (!mounted) return;
+
       setState(() {
         _dashboardFuture = DashboardService.fetchDashboard();
         _checkingConsent = false;
       });
     } catch (e) {
       if (!mounted) return;
+
       setState(() => _checkingConsent = false);
       _showError(e.toString());
     }
@@ -264,302 +279,6 @@ class _Section extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class NurseConsentPage extends StatefulWidget {
-  final Map<String, dynamic> statusData;
-
-  const NurseConsentPage({super.key, required this.statusData});
-
-  @override
-  State<NurseConsentPage> createState() => _NurseConsentPageState();
-}
-
-class _NurseConsentPageState extends State<NurseConsentPage> {
-  File? signatureFile;
-  bool loading = false;
-
-  final ImagePicker _picker = ImagePicker();
-
-  bool get canSignConsent =>
-      widget.statusData["police_verified"] == "CLEAR" &&
-      widget.statusData["aadhaar_verified"] == true;
-
-  // 👇👇 YAHAN LAGANA HAI
-  Future<void> pickSignature(ImageSource source) async {
-    final picked = await _picker.pickImage(source: source, imageQuality: 80);
-
-    if (picked != null) {
-      setState(() {
-        signatureFile = File(picked.path);
-      });
-    }
-  }
-
-  Future<void> submitConsent() async {
-    if (signatureFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please upload your signature before submitting."),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      loading = true;
-    });
-
-    try {
-      // Convert file to base64
-      final bytes = await signatureFile!.readAsBytes();
-      final base64Signature = "data:image/png;base64,${base64Encode(bytes)}";
-
-      // final res = await ApiClient.post("/nurse/consent/sign", {
-      //   "confidentiality_accepted": true,
-      //   "no_direct_payment_accepted": true,
-      //   "police_termination_accepted": true,
-      //   "signature_image": base64Signature,
-      // });
-      await ConsentService.signConsent(
-        confidentiality: true,
-        noDirectPayment: true,
-        policeTermination: true,
-        signatureImage: base64Signature,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Consent signed successfully!"),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      Navigator.pushReplacementNamed(context, "/login");
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed to sign consent: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => loading = false);
-    }
-  }
-
-  void showSignatureSourceSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Upload Signature",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text("Camera"),
-                onTap: () {
-                  Navigator.pop(context);
-                  pickSignature(ImageSource.camera);
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text("Gallery"),
-                onTap: () {
-                  Navigator.pop(context);
-                  pickSignature(ImageSource.gallery);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("👩‍⚕️ Staff Legal Declaration & Undertaking"),
-        automaticallyImplyLeading: true,
-      ),
-      backgroundColor: AppTheme.primarylight,
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ================= LEGAL DECLARATION =================
-            Card(
-              color: Colors.grey.shade50,
-              elevation: .5,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      "1️⃣ Main declare karta/karti hoon ki mere sabhi documents genuine hain...",
-                      style: TextStyle(fontSize: 14.5, height: 1.5),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "2️⃣ Main company ke sabhi rules – duty timing, transfer...",
-                      style: TextStyle(fontSize: 14.5, height: 1.5),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "3️⃣ Patient ki medical information, photos, videos...",
-                      style: TextStyle(fontSize: 14.5, height: 1.5),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "4️⃣ Bina company ki written permission ke kisi patient se direct payment...",
-                      style: TextStyle(fontSize: 14.5, height: 1.5),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "5️⃣ Bina notice duty chhodna company ke financial loss ka karan...",
-                      style: TextStyle(fontSize: 14.5, height: 1.5),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "6️⃣ Patient ke ghar par bidi, cigarette, gutka, alcohol ya drugs...",
-                      style: TextStyle(fontSize: 14.5, height: 1.5),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "7️⃣ Patient / relatives ke saath misbehaviour, dhamki ya abuse...",
-                      style: TextStyle(fontSize: 14.5, height: 1.5),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "8️⃣ Chori, cheating, fraud, ya company/patient ka nuksaan...",
-                      style: TextStyle(fontSize: 14.5, height: 1.5),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "9️⃣ Company ke khilaf patient ko bhadkana, ya confidential info misuse...",
-                      style: TextStyle(fontSize: 14.5, height: 1.5),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "🔟 Police verification fail hone par meri service bina notice terminate ki ja sakti hai.",
-                      style: TextStyle(fontSize: 14.5, height: 1.5),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ================= CONFIDENTIALITY =================
-            Card(
-              color: Colors.grey.shade50,
-              elevation: .5,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: const Text(
-                  "🔒 CONFIDENTIALITY & DISCIPLINE\n\n"
-                  "Main patient & company data ko misuse nahi karunga/karungi. "
-                  "Violation par IT Act 2000 ke tahat action liya ja sakta hai.",
-                  style: TextStyle(fontSize: 14.5, height: 1.5),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ================= SIGNATURE UPLOAD =================
-            Card(
-              color: Colors.grey.shade50,
-              elevation: .5,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Text(
-                      "Upload your signature",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: showSignatureSourceSheet,
-                      child: Container(
-                        height: 150,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade400),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: signatureFile != null
-                            ? Image.file(signatureFile!, fit: BoxFit.contain)
-                            : const Center(
-                                child: Text(
-                                  "Tap to upload signature",
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: loading ? null : submitConsent,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                          horizontal: 20,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: loading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              "Submit & Sign",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
           ],
         ),
       ),
