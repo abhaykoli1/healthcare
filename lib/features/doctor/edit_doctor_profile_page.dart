@@ -1,6 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
+import 'package:healthcare/features/auth/nurse_update_password_page.dart';
 
 class EditDoctorProfilePage extends StatefulWidget {
   const EditDoctorProfilePage({super.key});
@@ -16,8 +18,10 @@ class _EditDoctorProfilePageState extends State<EditDoctorProfilePage> {
   // final registrationController = TextEditingController();
   final nameController = TextEditingController();
   final experienceController = TextEditingController();
+  final phoneController = TextEditingController();
 
   bool isLoading = false;
+  String? currentPassword;
 
   // ======================================================
   // 🔥 LOAD PROFILE (GET /profile/me)
@@ -28,8 +32,11 @@ class _EditDoctorProfilePageState extends State<EditDoctorProfilePage> {
 
       final data = await ApiClient.get("/doctor/profile/me");
 
+      print(data);
       specializationController.text = data["specialization"] ?? "";
       nameController.text = data["name"] ?? "";
+      phoneController.text = data["phone"] ?? "";
+      currentPassword = data["password_hash"] ?? "";
 
       // registrationController.text = data["registration_number"] ?? "";
 
@@ -83,6 +90,15 @@ class _EditDoctorProfilePageState extends State<EditDoctorProfilePage> {
   }
 
   @override
+  void dispose() {
+    specializationController.dispose();
+    nameController.dispose();
+    experienceController.dispose();
+    phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.primarylight,
@@ -95,6 +111,53 @@ class _EditDoctorProfilePageState extends State<EditDoctorProfilePage> {
                 key: _formKey,
                 child: Column(
                   children: [
+                    GestureDetector(
+                      onTap: () async {
+                        final updated = await Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (_) => NurseUpdatePasswordPage(
+                              phone: phoneController.text,
+                              currentPassword: currentPassword,
+                            ),
+                          ),
+                        );
+
+                        if (updated == true) {
+                          loadProfile(); // ✅ correct name
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppTheme.primary),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.lock_reset,
+                              size: 18,
+                              color: AppTheme.primary,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              "Update Password",
+                              style: TextStyle(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 20),
                     // ======================
                     // Specialization
                     // ======================

@@ -28,13 +28,24 @@ class _SplashPageState extends State<SplashPage> {
 
     if (token != null && token.isNotEmpty) {
       if (role == "DOCTOR") {
-        Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const DoctorProfilePage()));
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(builder: (context) => const DoctorProfilePage()),
+        );
       } else if (role == "NURSE") {
         Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-      }else if(role == "PATIENT"){
-        Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const PataintProfilePage()));
-      }else{
-        Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => const StaffProfileComplaintsPage()));
+      } else if (role == "PATIENT") {
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(builder: (context) => const PataintProfilePage()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(
+            builder: (context) => const StaffProfileComplaintsPage(),
+          ),
+        );
       }
     } else {
       Navigator.pushReplacementNamed(context, AppRoutes.login);
@@ -43,10 +54,6 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

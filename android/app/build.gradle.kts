@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
+    id("com.google.gms.google-services")   // ✅ Firebase
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -10,9 +10,11 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+    // ✅ REQUIRED for flutter_local_notifications (DESUGARING FIX)
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -20,31 +22,36 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.healthcare"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
+
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
+
     configurations.all {
-    resolutionStrategy {
-        force("androidx.core:core:1.13.1")
-        force("androidx.core:core-ktx:1.13.1")
+        resolutionStrategy {
+            force("androidx.core:core:1.13.1")
+            force("androidx.core:core-ktx:1.13.1")
+        }
     }
-}
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // ✅ MUST be >= 2.1.4 (latest stable)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }

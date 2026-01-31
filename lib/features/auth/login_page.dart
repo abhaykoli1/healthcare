@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
+import 'package:healthcare/core/utils/app_access.dart';
 import 'package:healthcare/core/utils/app_message.dart';
 import 'package:healthcare/features/auth/auth_service.dart';
 import '../../routes/app_routes.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,7 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-
+    AppPermissions.requestAll();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (AppMessage.snack != null) {
         _snack(AppMessage.snack!);
@@ -56,17 +58,10 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               children: [
                 /// 🔹 LOGO / ICON
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppTheme.primary,
-                  ),
-                  child: const Icon(
-                    Icons.local_hospital,
-                    size: 52,
-                    color: Colors.white,
-                  ),
+                CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Color.fromARGB(255, 43, 53, 64),
+                  backgroundImage: const AssetImage("assets/media/logo.png"),
                 ),
 
                 const SizedBox(height: 8),
@@ -229,7 +224,7 @@ class _LoginPageState extends State<LoginPage> {
                             Navigator.pushNamed(context, AppRoutes.nurseSignup);
                           },
                           child: const Text(
-                            "New Nurse? Apply for Verification",
+                            "Apply for job!",
                             style: TextStyle(
                               // color: AppTheme.new,
                               fontSize: 14,
@@ -244,9 +239,18 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 24),
 
-                const Text(
-                  "© 2025 Healthcare Services",
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                GestureDetector(
+                  onTap: () async {
+                    final uri = Uri.parse("https://digitalwishmedia.com/");
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                  child: const Text(
+                    "© 2026 Made By Digital Wish Media (DWM)",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54, // ✅ same color
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -1,105 +1,8 @@
-// import 'package:flutter/material.dart';
-// import 'package:healthcare/core/theme/app_theme.dart';
-// import '../../routes/app_routes.dart';
-// import 'auth_service.dart';
-
-// class OtpPage extends StatefulWidget {
-//   const OtpPage({super.key});
-
-//   @override
-//   State<OtpPage> createState() => _OtpPageState();
-// }
-
-// class _OtpPageState extends State<OtpPage> {
-//   final otpCtrl = TextEditingController();
-//   bool loading = false;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final phone = ModalRoute.of(context)!.settings.arguments as String;
-
-//     return Scaffold(
-//       backgroundColor: AppTheme.primarylight,
-
-//       appBar: AppBar(title: const Text("Verify OTP")),
-//       body: Padding(
-//         padding: const EdgeInsets.all(24),
-//         child: Column(
-//           children: [
-//             Text("OTP sent to $phone"),
-//             const SizedBox(height: 24),
-
-//             TextField(
-//               controller: otpCtrl,
-//               keyboardType: TextInputType.number,
-//               decoration: const InputDecoration(
-//                 labelText: "Enter OTP",
-//                 prefixIcon: Icon(Icons.lock),
-//               ),
-//             ),
-
-//             const SizedBox(height: 24),
-
-//             SizedBox(
-//               width: double.infinity,
-//               child: ElevatedButton(
-//                 onPressed: loading
-//                     ? null
-//                     : () async {
-//                         if (otpCtrl.text.isEmpty) {
-//                           ScaffoldMessenger.of(context).showSnackBar(
-//                             const SnackBar(content: Text("Enter OTP")),
-//                           );
-//                           return;
-//                         }
-
-//                         setState(() => loading = true);
-
-//                         try {
-//                           await AuthService.verifyOtp(
-//                             phone,
-//                             otpCtrl.text,
-//                             context,
-//                           );
-
-//                           if (!mounted) return;
-//                         } catch (e) {
-//                           if (!mounted) return;
-
-//                           ScaffoldMessenger.of(context).showSnackBar(
-//                             SnackBar(
-//                               content: Text(
-//                                 e.toString().replaceAll("Exception:", ""),
-//                               ),
-//                               backgroundColor: Colors.red,
-//                             ),
-//                           );
-//                         } finally {
-//                           if (mounted) {
-//                             setState(() => loading = false);
-//                           }
-//                         }
-//                       },
-//                 child: loading
-//                     ? const SizedBox(
-//                         height: 20,
-//                         width: 20,
-//                         child: CircularProgressIndicator(strokeWidth: 2),
-//                       )
-//                     : const Text("VERIFY & LOGIN"),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 import 'dart:async';
+import 'dart:developer';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
-import '../../routes/app_routes.dart';
 import 'auth_service.dart';
 
 class OtpPage extends StatefulWidget {
@@ -110,29 +13,45 @@ class OtpPage extends StatefulWidget {
 }
 
 class _OtpPageState extends State<OtpPage> {
-  final otpCtrl = TextEditingController();
+  final TextEditingController otpCtrl = TextEditingController();
 
   bool loading = false;
 
-  /* =========================
-     🔥 TIMER STATE
-  ========================= */
+  /* ================= TIMER ================= */
   int secondsRemaining = 30;
   bool canResend = false;
   Timer? _timer;
 
-  /* =========================
-     INIT
-  ========================= */
+  /* ================= FCM ================= */
+  String fcmToken = "";
+
+  /* ================= INIT ================= */
   @override
   void initState() {
     super.initState();
     _startTimer();
+    _initFCM(); // 🔥 permission only once
   }
 
-  /* =========================
-     TIMER FUNCTION
-  ========================= */
+  /* ================= FCM SETUP ================= */
+  Future<void> _initFCM() async {
+    try {
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+      await messaging.requestPermission();
+
+      final token = await messaging.getToken();
+
+      if (token != null) {
+        fcmToken = token;
+        log("🔥 FCM TOKEN => $fcmToken");
+      }
+    } catch (e) {
+      log("FCM ERROR => $e");
+    }
+  }
+
+  /* ================= TIMER ================= */
   void _startTimer() {
     secondsRemaining = 30;
     canResend = false;
@@ -149,9 +68,7 @@ class _OtpPageState extends State<OtpPage> {
     });
   }
 
-  /* =========================
-     RESEND OTP
-  ========================= */
+  /* ================= RESEND OTP ================= */
   Future<void> _resendOtp(String phone) async {
     try {
       await AuthService.sendOtp(phone);
@@ -168,14 +85,45 @@ class _OtpPageState extends State<OtpPage> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
-  /* =========================
-     DISPOSE
-  ========================= */
+  /* ================= VERIFY OTP ================= */
+  Future<void> _verifyOtp(String phone) async {
+    if (otpCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Enter OTP")),
+      );
+      return;
+    }
+
+    setState(() => loading = true);
+
+    try {
+      await AuthService.verifyOtp(
+        phone,
+        otpCtrl.text.trim(),
+        context,
+        fcmToken, // 🔥 safe token (no crash)
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll("Exception:", "")),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  /* ================= DISPOSE ================= */
   @override
   void dispose() {
     _timer?.cancel();
@@ -183,9 +131,7 @@ class _OtpPageState extends State<OtpPage> {
     super.dispose();
   }
 
-  /* =========================
-     UI
-  ========================= */
+  /* ================= UI ================= */
   @override
   Widget build(BuildContext context) {
     final phone = ModalRoute.of(context)!.settings.arguments as String;
@@ -193,27 +139,32 @@ class _OtpPageState extends State<OtpPage> {
     return Scaffold(
       backgroundColor: AppTheme.primarylight,
       appBar: AppBar(title: const Text("Verify OTP")),
-
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Text("OTP sent to $phone"),
+            Text(
+              "OTP sent to $phone",
+              style: const TextStyle(fontSize: 16),
+            ),
+
             const SizedBox(height: 24),
 
-            /* ================= OTP FIELD ================= */
+            /* OTP FIELD */
             TextField(
               controller: otpCtrl,
               keyboardType: TextInputType.number,
+              maxLength: 6,
               decoration: const InputDecoration(
                 labelText: "Enter OTP",
                 prefixIcon: Icon(Icons.lock),
+                counterText: "",
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
-            /* ================= TIMER TEXT ================= */
+            /* TIMER */
             if (!canResend)
               Text(
                 "Resend OTP in $secondsRemaining sec",
@@ -222,58 +173,27 @@ class _OtpPageState extends State<OtpPage> {
 
             const SizedBox(height: 24),
 
-            /* ================= BUTTON SWITCH ================= */
-
-            /// 🔹 BEFORE TIMER END → VERIFY
-            if (!canResend)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: loading
-                      ? null
-                      : () async {
-                          if (otpCtrl.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Enter OTP")),
-                            );
-                            return;
-                          }
-
-                          setState(() => loading = true);
-
-                          try {
-                            await AuthService.verifyOtp(
-                              phone,
-                              otpCtrl.text,
-                              context,
-                            );
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  e.toString().replaceAll("Exception:", ""),
-                                ),
-                                backgroundColor: Colors.red,
+            /* BUTTON */
+            SizedBox(
+              width: double.infinity,
+              child: canResend
+                  ? OutlinedButton(
+                      onPressed: () => _resendOtp(phone),
+                      child: const Text("RESEND OTP"),
+                    )
+                  : ElevatedButton(
+                      onPressed: loading ? null : () => _verifyOtp(phone),
+                      child: loading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
                               ),
-                            );
-                          } finally {
-                            if (mounted) setState(() => loading = false);
-                          }
-                        },
-                  child: loading
-                      ? const CircularProgressIndicator()
-                      : const Text("VERIFY & LOGIN"),
-                ),
-              )
-            /// 🔹 AFTER TIMER END → RESEND
-            else
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => _resendOtp(phone),
-                  child: const Text("RESEND OTP"),
-                ),
-              ),
+                            )
+                          : const Text("VERIFY & LOGIN"),
+                    ),
+            ),
           ],
         ),
       ),

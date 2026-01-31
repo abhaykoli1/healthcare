@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "813675667597",
+    "project_id": "healthcare-hms",
+    "storage_bucket": "healthcare-hms.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813675667597:android:95ac3df6204a5324b882c4",
+        "android_client_info": {
+          "package_name": "com.example.healthcare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlxcaVLmsuu4BDbUExXAlilF9ejDUB7dY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

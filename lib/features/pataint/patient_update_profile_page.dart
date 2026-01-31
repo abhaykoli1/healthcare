@@ -1,8 +1,11 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
 import 'dart:io';
+
+import 'package:healthcare/features/auth/nurse_update_password_page.dart';
 
 class PatientUpdateProfilePage extends StatefulWidget {
   const PatientUpdateProfilePage({super.key});
@@ -22,6 +25,7 @@ class _PatientUpdateProfilePageState extends State<PatientUpdateProfilePage> {
   late TextEditingController name;
   late TextEditingController fatherName;
   late TextEditingController phone;
+  late TextEditingController password;
   late TextEditingController otherNumber;
   late TextEditingController email;
   late TextEditingController age;
@@ -39,6 +43,7 @@ class _PatientUpdateProfilePageState extends State<PatientUpdateProfilePage> {
     name = TextEditingController();
     fatherName = TextEditingController();
     phone = TextEditingController();
+    password = TextEditingController();
     otherNumber = TextEditingController();
     email = TextEditingController();
     age = TextEditingController();
@@ -54,11 +59,12 @@ class _PatientUpdateProfilePageState extends State<PatientUpdateProfilePage> {
     try {
       final res = await ApiClient.get("/patient/profile/view");
       final p = res["patient"];
-      print(p);
+      print("patient $p");
       // ✅ Fill controller values
       name.text = p["name"] ?? "";
       fatherName.text = p["father_name"] ?? "";
       phone.text = p["phone"] ?? "";
+      password.text = p["password_hash"] ?? "";
       otherNumber.text = p["other_number"] ?? "";
       email.text = p["email"] ?? "";
       age.text = p["age"]?.toString() ?? "";
@@ -156,6 +162,7 @@ class _PatientUpdateProfilePageState extends State<PatientUpdateProfilePage> {
         "name": name.text,
         "father_name": fatherName.text,
         "phone": phone.text,
+        "password_hash": password.text,
         "other_number": otherNumber.text,
         "email": email.text,
         "age": int.parse(age.text),
@@ -204,6 +211,58 @@ class _PatientUpdateProfilePageState extends State<PatientUpdateProfilePage> {
                 child: ListView(
                   children: [
                     SizedBox(height: 16),
+
+                    GestureDetector(
+                      onTap: () async {
+                        // 🔥 async add karo
+
+                        final updated = await Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (_) => NurseUpdatePasswordPage(
+                              phone: phone.text,
+                              currentPassword: password.text,
+                            ),
+                          ),
+                        );
+
+                        if (updated == true) {
+                          _loadProfile(); // 🔥 correct function name
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppTheme.primary),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.lock_reset,
+                              size: 18,
+                              color: AppTheme.primary,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              "Update Admin Password",
+                              style: TextStyle(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 20),
+
                     _field("Name", name),
                     _field("Father Name", fatherName),
                     _field("Phone", phone, keyboard: TextInputType.phone),

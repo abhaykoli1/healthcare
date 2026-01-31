@@ -81,6 +81,7 @@ class _PunchCardState extends State<PunchCard> {
   bool canPunchOut = true;
   bool loading = true;
   Timer? _locationTimer;
+  String dutyStatus = "";
 
   void startLiveTracking() {
     if (_locationTimer != null) return;
@@ -105,10 +106,12 @@ class _PunchCardState extends State<PunchCard> {
   @override
   void initState() {
     super.initState();
-    _applyStatus(widget.status);
+    // _applyStatus(widget.status);
+    dutyStatus = widget.status;
+    _applyStatus(dutyStatus);
 
     // 🔁 Resume tracking if already on duty
-    if (widget.status == "ACTIVE") {
+    if (dutyStatus == "ACTIVE") {
       startLiveTracking();
     }
   }
@@ -179,9 +182,9 @@ class _PunchCardState extends State<PunchCard> {
             ),
             const SizedBox(height: 4),
             Text(
-              widget.status == "ACTIVE" ? "On Duty" : "Off Duty",
+              dutyStatus == "ACTIVE" ? "On Duty" : "Off Duty",
               style: TextStyle(
-                color: widget.status == "ACTIVE" ? Colors.green : Colors.red,
+                color: dutyStatus == "ACTIVE" ? Colors.green : Colors.red,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -251,28 +254,21 @@ class _PunchCardState extends State<PunchCard> {
     try {
       setState(() {
         loading = true;
-
-        if (inOut) {
-          canPunchIn = false;
-          canPunchOut = true;
-        } else {
-          canPunchIn = true;
-          canPunchOut = false;
-        }
       });
-      // ⭐ save immediately (offline safe)
 
       if (inOut) {
         await DutyService.checkIn();
-        // 🟢 START LIVE TRACKING
         startLiveTracking();
+
+        dutyStatus = "ACTIVE"; // 🔥 update
       } else {
         await DutyService.checkOut();
-        // 🔴 STOP LIVE TRACKING
         stopLiveTracking();
+
+        dutyStatus = "INACTIVE"; // 🔥 update
       }
 
-      await _loadStatus();
+      _applyStatus(dutyStatus); // 🔥 reapply buttons
 
       _snack(inOut ? "Punch IN successful" : "Punch OUT successful");
     } catch (e) {
@@ -281,6 +277,41 @@ class _PunchCardState extends State<PunchCard> {
       if (mounted) setState(() => loading = false);
     }
   }
+
+  // Future<void> _handlePunch({required bool inOut}) async {
+  //   try {
+  //     setState(() {
+  //       loading = true;
+
+  //       if (inOut) {
+  //         canPunchIn = false;
+  //         canPunchOut = true;
+  //       } else {
+  //         canPunchIn = true;
+  //         canPunchOut = false;
+  //       }
+  //     });
+  //     // ⭐ save immediately (offline safe)
+
+  //     if (inOut) {
+  //       await DutyService.checkIn();
+  //       // 🟢 START LIVE TRACKING
+  //       startLiveTracking();
+  //     } else {
+  //       await DutyService.checkOut();
+  //       // 🔴 STOP LIVE TRACKING
+  //       stopLiveTracking();
+  //     }
+
+  //     await _loadStatus();
+
+  //     _snack(inOut ? "Punch IN successful" : "Punch OUT successful");
+  //   } catch (e) {
+  //     _snack(e.toString());
+  //   } finally {
+  //     if (mounted) setState(() => loading = false);
+  //   }
+  // }
 
   void _snack(String msg) {
     if (!mounted) return;

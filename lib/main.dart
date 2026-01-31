@@ -1,22 +1,91 @@
+import 'dart:developer';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:healthcare/firebase_options.dart';
 import 'routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
 
-final GlobalKey<NavigatorState> appNavigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+final FlutterLocalNotificationsPlugin localNotifications =
+    FlutterLocalNotificationsPlugin();
+
+Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
   runApp(const ProviderScope(child: HospitalApp()));
 }
 
-class HospitalApp extends StatelessWidget {
+class HospitalApp extends StatefulWidget {
   const HospitalApp({super.key});
+
+  @override
+  State<HospitalApp> createState() => _HospitalAppState();
+}
+
+class _HospitalAppState extends State<HospitalApp> {
+  @override
+  void initState() {
+    super.initState();
+    initFCM();
+  }
+
+  Future<void> initFCM() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    /// permission
+    await messaging.requestPermission();
+
+    /// token
+    String? token = await messaging.getToken();
+    log("FCM TOKEN => $token");
+
+    /// foreground message
+    FirebaseMessaging.onMessage.listen((message) {
+      showLocal(message);
+    });
+
+    initLocal();
+  }
+
+  void initLocal() {
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    localNotifications.initialize(
+      settings: InitializationSettings(android: android),
+    );
+  }
+
+  void showLocal(RemoteMessage message) {
+    const androidDetails = AndroidNotificationDetails(
+      'high_importance_channel',
+      'High Importance Notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    localNotifications.show(
+      id: 0,
+      title: message.notification?.title,
+      body: message.notification?.body,
+
+      notificationDetails: NotificationDetails(android: androidDetails),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-       navigatorKey: appNavigatorKey,
+      navigatorKey: appNavigatorKey,
       title: 'Hospital Management',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

@@ -26,11 +26,16 @@ class AuthService {
     }
   }
 
-  static Future<void> verifyOtp(String phone, String otp, context) async {
+  static Future<void> verifyOtp(
+    String phone,
+    String otp,
+    context,
+    String token,
+  ) async {
     final res = await http.post(
       Uri.parse("$baseUrl/auth/verify-otp"),
       headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"phone": phone, "otp": otp}),
+      body: jsonEncode({"phone": phone, "otp": otp, "token": token}),
     );
 
     /// ❌ ERROR RESPONSE

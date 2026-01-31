@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
+import 'package:healthcare/core/network/base.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/features/auth/about_us_page.dart';
@@ -29,7 +30,7 @@ class _PataintProfilePageState extends State<PataintProfilePage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: AppTheme.primarylight,
         appBar: AppBar(
@@ -52,6 +53,7 @@ class _PataintProfilePageState extends State<PataintProfilePage> {
               Tab(text: "Details"),
               Tab(text: "Vitals"),
               Tab(text: "Medications"),
+              Tab(text: "Equip"),
             ],
           ),
         ),
@@ -68,6 +70,7 @@ class _PataintProfilePageState extends State<PataintProfilePage> {
                 _DetailsTab(data),
                 _VitalsTab(data["vitals"]),
                 _MedicationsTab(data["medications"]),
+                EquipmentPage(patientId: ''),
               ],
             );
           },
@@ -105,6 +108,163 @@ class _PataintProfilePageState extends State<PataintProfilePage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class EquipmentPage extends StatefulWidget {
+  final String patientId;
+
+  const EquipmentPage({super.key, required this.patientId});
+
+  @override
+  State<EquipmentPage> createState() => _EquipmentPageState();
+}
+
+class _EquipmentPageState extends State<EquipmentPage> {
+  List equipments = [];
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadEquipments();
+  }
+
+  ///////////////////////////////////////////////////////
+  /// LOAD EQUIPMENTS
+  ///////////////////////////////////////////////////////
+  Future<void> loadEquipments() async {
+    try {
+      final res = await ApiClient.get("/equipment/equipment-getall");
+
+      setState(() {
+        equipments = res;
+        loading = false;
+      });
+    } catch (e) {
+      setState(() => loading = false);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  ///////////////////////////////////////////////////////
+  /// REQUEST EQUIPMENT
+  ///////////////////////////////////////////////////////
+  Future<void> requestEquipment(String equipmentId) async {
+    try {
+      await ApiClient.post("/equipment/request-equipment", {
+        "equipment_id": equipmentId,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("✅ Request sent successfully"),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  ///////////////////////////////////////////////////////
+  /// UI
+  ///////////////////////////////////////////////////////
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.primarylight,
+      appBar: AppBar(title: const Text("Equipments")),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : equipments.isEmpty
+          ? const Center(child: Text("No equipments found"))
+          : RefreshIndicator(
+              onRefresh: loadEquipments,
+              child: GridView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: equipments.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.75,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemBuilder: (context, index) {
+                  final e = equipments[index];
+
+                  return _equipmentCard(e);
+                },
+              ),
+            ),
+    );
+  }
+
+  ///////////////////////////////////////////////////////
+  /// CARD WIDGET
+  ///////////////////////////////////////////////////////
+  Widget _equipmentCard(Map e) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.grey.shade50,
+        boxShadow: [
+          BoxShadow(blurRadius: 6, color: Colors.black.withOpacity(0.08)),
+        ],
+      ),
+      child: Column(
+        children: [
+          //////////////////////////////////////
+          /// IMAGE
+          //////////////////////////////////////
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              child: Image.network(
+                baseUrlApi + e["image"],
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 60),
+              ),
+            ),
+          ),
+
+          //////////////////////////////////////
+          /// TITLE
+          //////////////////////////////////////
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              e["title"],
+              style: const TextStyle(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+          ),
+
+          //////////////////////////////////////
+          /// BUTTON
+          //////////////////////////////////////
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                
+                onPressed: () => requestEquipment(e["id"]),
+                child: const Text("Request"),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

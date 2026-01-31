@@ -124,6 +124,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
                           ),
 
                         const SizedBox(width: 16),
+
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,31 +159,37 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   // 🔹 First line (single badge)
-                                  if (nurse['aadhaar_verified'] == true)
-                                    Container(
-                                      margin: const EdgeInsets.only(bottom: 4),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green.shade500,
-                                        borderRadius: BorderRadius.circular(28),
-                                      ),
 
-                                      child: const Text(
-                                        "Aadhar Verified",
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
                                   // 🔹 Second line (two badges)
                                   Wrap(
                                     spacing: 4,
                                     children: [
+                                      if (nurse['aadhaar_verified'] == true)
+                                        Container(
+                                          margin: const EdgeInsets.only(
+                                            bottom: 4,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.shade500,
+                                            borderRadius: BorderRadius.circular(
+                                              28,
+                                            ),
+                                          ),
+
+                                          child: const Text(
+                                            "Aadhar Verified",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      SizedBox(width: 0),
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 12,
@@ -211,28 +218,27 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
                                         ),
                                       ),
 
-                                      SizedBox(width: 0),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.shade100,
-                                          borderRadius: BorderRadius.circular(
-                                            28,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          nurse['police_verification_status'] ??
-                                              "N/A",
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                      ),
+                                      // Container(
+                                      //   padding: const EdgeInsets.symmetric(
+                                      //     horizontal: 12,
+                                      //     vertical: 2,
+                                      //   ),
+                                      //   decoration: BoxDecoration(
+                                      //     color: Colors.blue.shade100,
+                                      //     borderRadius: BorderRadius.circular(
+                                      //       28,
+                                      //     ),
+                                      //   ),
+                                      //   child: Text(
+                                      // nurse['police_verification_status'] ??
+                                      //     "N/A",
+                                      //     style: const TextStyle(
+                                      //       fontSize: 12,
+                                      //       fontWeight: FontWeight.w600,
+                                      //       color: Colors.black87,
+                                      //     ),
+                                      //   ),
+                                      // ),
                                     ],
                                   ),
                                 ],
@@ -274,7 +280,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
             // ===== KPI CARDS =====
             _buildKpiSection(kpi, nurse),
             const SizedBox(height: 20),
@@ -288,36 +294,6 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
     );
   }
 
-  // ================= KPI SECTION =================
-  // Widget _buildKpiSection(Map kpi) {
-  //   return Wrap(
-  //     spacing: 12,
-  //     runSpacing: 12,
-  //     children: [
-  //       _kpiCard("Attendance", "${kpi['attendance']} Days"),
-  //       _kpiCard(
-  //         "Salary",
-  //         "₹ ${kpi['salary'] ?? 'N/A'}",
-  //         extra: kpi['salary_paid'] != null
-  //             ? (kpi['salary_paid'] ? "Paid" : "Unpaid")
-  //             : null,
-  //       ),
-  //       _kpiCard(
-  //         "Active Duty",
-  //         kpi['active_duty'] ?? "N/A",
-  //         extra: kpi['shift'],
-  //       ),
-  //       _kpiCard(
-  //         "Consent Status",
-  //         kpi['consent_status'] ?? "N/A",
-  //         extra: kpi['consent_version'] != null
-  //             ? "Version ${kpi['consent_version']}"
-  //             : null,
-  //       ),
-  //     ],
-  //   );
-  // }
-
   Widget _buildKpiSection(Map kpi, nurse) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -328,6 +304,14 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
           runSpacing: 12,
           children: [
             SizedBox(
+              width: double.infinity,
+              child: _kpiCard(
+                "Police Verification Status",
+                nurse['police_verification_status'] ?? "N/A",
+                bgColor: Colors.orange.shade400,
+              ),
+            ),
+            SizedBox(
               width: width,
               child: _kpiCard("Attendance", "${kpi['attendance']} Days"),
             ),
@@ -335,6 +319,7 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
               width: width,
               child: _kpiCard("Credited Salary", "₹ ${kpi['salary'] ?? '0'}"),
             ),
+
             // SizedBox(
             //   width: width,
             //   child: _kpiCard(
@@ -343,28 +328,17 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
             //     extra: kpi['shift'],
             //   ),
             // ),
-            SizedBox(
-              width: double.infinity,
-              child: _kpiCard(
-                "Consent Status",
-                nurse['digital_signature_verify'] == true
-                    ? "Signed"
-                    : nurse['digital_signature_verify'] == false
-                    ? "Unsigned"
-                    : "N/A",
-              ),
-            ),
           ],
         );
       },
     );
   }
 
-  Widget _kpiCard(String title, String value, {String? extra}) {
+  Widget _kpiCard(String title, String value, {Color? bgColor, String? extra}) {
     return Material(
-      elevation: 2, // 👈 yahin elevation
+      elevation: 2,
       borderRadius: BorderRadius.circular(12),
-      color: Colors.grey.shade50,
+      color: bgColor ?? Colors.grey.shade50,
       shadowColor: Colors.black.withOpacity(0.2),
       child: Container(
         padding: const EdgeInsets.all(12),

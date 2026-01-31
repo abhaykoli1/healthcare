@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:healthcare/features/auth/nurse_update_password_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:healthcare/core/network/api_client.dart';
@@ -18,13 +20,24 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
 
   // ---------------- CONTROLLERS ----------------
   final phoneCtrl = TextEditingController();
+
   final otherPhoneCtrl = TextEditingController();
   final nameCtrl = TextEditingController();
   final fatherCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
-  final aadhaarCtrl = TextEditingController();
+
+  // @override
+  // void dispose() {
+  //   phoneCtrl.dispose();
+  //   otherPhoneCtrl.dispose();
+  //   nameCtrl.dispose();
+  //   fatherCtrl.dispose();
+  //   emailCtrl.dispose();
+  //   super.dispose();
+  // }
 
   String nurseType = "GNM";
+  String? resPassword;
   DateTime? joiningDate;
 
   // new picked files
@@ -32,12 +45,14 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
   File? digitalSignature;
   List<File> qualificationDocs = [];
   List<File> experienceDocs = [];
+  List<File> police = [];
 
   // existing urls (important)
   String? existingProfilePhoto;
   String? existingSignature;
   List<String> existingQualificationDocs = [];
   List<String> existingExperienceDocs = [];
+  List<String> existingpolice = [];
 
   bool loading = false;
 
@@ -60,13 +75,14 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
       setState(() => loading = true);
 
       final res = await ApiClient.get("/nurse/self-signup/me");
+      print(res);
 
       phoneCtrl.text = res["phone"] ?? "";
+      resPassword = res["password_hash"] ?? "";
       otherPhoneCtrl.text = res["other_number"] ?? "";
       nameCtrl.text = res["name"] ?? "";
       fatherCtrl.text = res["father_name"] ?? "";
       emailCtrl.text = res["email"] ?? "";
-      aadhaarCtrl.text = res["aadhaar_number"] ?? "";
 
       nurseType = res["nurse_type"] ?? "GNM";
 
@@ -80,6 +96,7 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
         res["qualification_docs"] ?? [],
       );
       existingExperienceDocs = List<String>.from(res["experience_docs"] ?? []);
+      existingpolice = List<String>.from(res["police"] ?? []);
 
       setState(() {});
     } catch (e) {
@@ -122,6 +139,12 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
       for (final f in experienceDocs) {
         experiencePaths.add(await FileUploadService.uploadFile(f));
       }
+      // -------- experience --------
+      List<String> policePaths = [...existingpolice];
+      for (final f in police) {
+        // ← use new picked files
+        policePaths.add(await FileUploadService.uploadFile(f));
+      }
 
       final payload = {
         "phone": phoneCtrl.text,
@@ -130,7 +153,6 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
         "father_name": fatherCtrl.text,
         "email": emailCtrl.text,
         "nurse_type": nurseType,
-        "aadhaar_number": aadhaarCtrl.text,
         "joining_date": joiningDate != null
             ? DateFormat("yyyy-MM-dd").format(joiningDate!)
             : null,
@@ -138,6 +160,7 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
         "digital_signature": signaturePath,
         "qualification_docs": qualificationPaths,
         "experience_docs": experiencePaths,
+        "police": policePaths,
       };
 
       await ApiClient.put("/nurse/self-signup/update", payload);
@@ -197,7 +220,60 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
                             ? NetworkImage(existingProfilePhoto!)
                                   as ImageProvider
                             : null,
-                        child: const Icon(Icons.camera_alt),
+                        child:
+                            profilePhoto == null && existingProfilePhoto == null
+                            ? const Icon(Icons.camera_alt)
+                            : null,
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                    GestureDetector(
+                      onTap: () async {
+                        // 🔥 async add karo
+
+                        final updated = await Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (_) => NurseUpdatePasswordPage(
+                              phone: phoneCtrl.text,
+                              currentPassword: resPassword,
+                            ),
+                          ),
+                        );
+
+                        if (updated == true) {
+                          loadProfile(); // 🔥 refresh API again
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppTheme.primary),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.lock_reset,
+                              size: 18,
+                              color: AppTheme.primary,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              "Update Admin Password",
+                              style: TextStyle(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
 
@@ -208,8 +284,8 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
                     _field(nameCtrl, "Name"),
                     _field(fatherCtrl, "Father Name"),
                     _field(emailCtrl, "Email"),
-                    _field(aadhaarCtrl, "Aadhaar Number"),
 
+                    // _field(policeCtrl, "Aadhaar Number"),
                     const SizedBox(height: 12),
 
                     DropdownButtonFormField<String>(
@@ -258,7 +334,17 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
                       ),
                     ),
 
-                    const SizedBox(height: 80),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () => _pickMultiple(police),
+                        child: Text(
+                          "Add Police Verification (${existingpolice.length + police.length})",
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

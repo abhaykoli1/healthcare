@@ -24,7 +24,7 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
   final nameCtrl = TextEditingController();
   final fatherCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
-  final aadhaarCtrl = TextEditingController();
+  // final aadhaarCtrl = TextEditingController();
 
   String nurseType = "GNM";
   DateTime? joiningDate;
@@ -111,9 +111,6 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
       if (profilePhoto != null) {
         profilePhotoPath = await FileUploadService.uploadFile(profilePhoto!);
       }
-      // if (digitalSignature != null) {
-      //   signaturePath = await FileUploadService.uploadFile(digitalSignature!);
-      // }
 
       for (final f in qualificationDocs) {
         qualificationPaths.add(await FileUploadService.uploadFile(f));
@@ -129,7 +126,7 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
         "father_name": fatherCtrl.text.isNotEmpty ? fatherCtrl.text : null,
         "email": emailCtrl.text.isNotEmpty ? emailCtrl.text : null,
         "nurse_type": nurseType,
-        "aadhaar_number": aadhaarCtrl.text.isNotEmpty ? aadhaarCtrl.text : null,
+        // "aadhaar_number": aadhaarCtrl.text.isNotEmpty ? aadhaarCtrl.text : null,
         "joining_date": DateFormat("yyyy-MM-dd").format(joiningDate!),
         "profile_photo": profilePhotoPath,
         "digital_signature": signaturePath,
@@ -228,7 +225,7 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
                       decoration: _inputDecoration("Nurse Type"),
                     ),
                     const SizedBox(height: 13),
-                    _field(aadhaarCtrl, "Aadhaar Number", TextInputType.number),
+                    // _field(aadhaarCtrl, "Aadhaar Number", TextInputType.number),
                     const SizedBox(height: 2),
                     _datePicker(),
                   ],

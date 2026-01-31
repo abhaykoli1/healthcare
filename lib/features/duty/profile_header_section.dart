@@ -34,13 +34,6 @@ class ProfileHeader extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        // boxShadow: [
-        //   BoxShadow(
-        //     color: Colors.blue.withOpacity(0.25),
-        //     blurRadius: 24,
-        //     offset: const Offset(0, 12),
-        //   ),
-        // ],
       ),
       child: Row(
         children: [
@@ -50,21 +43,7 @@ class ProfileHeader extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2),
             ),
-            // child: const CircleAvatar(
-            //   radius: 34,
-            //   backgroundColor: Colors.white,
-            //   child: Icon(Icons.person, size: 36, color: AppTheme.primary),
-            // ),
-            // child: CircleAvatar(
-            //   radius: 38,
-            //   backgroundColor: Colors.white,
-            //   backgroundImage: profile != null && profile.isNotEmpty
-            //       ? NetworkImage(profile)
-            //       : null,
-            //   child: profile == null || profile.isEmpty
-            //       ? Icon(Icons.person, size: 38, color: AppTheme.primary)
-            //       : null,
-            // ),
+
             child: CircleAvatar(
               radius: 38,
               backgroundColor: Colors.white,
