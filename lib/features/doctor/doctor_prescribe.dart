@@ -4,9 +4,9 @@ import 'package:healthcare/core/theme/app_theme.dart';
 
 class PrescribeMedicinePage extends StatefulWidget {
   final String patientId;
-
+  
   const PrescribeMedicinePage({super.key, required this.patientId});
-
+  
   @override
   State<PrescribeMedicinePage> createState() => _PrescribeMedicinePageState();
 }

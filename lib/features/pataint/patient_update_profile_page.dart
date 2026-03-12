@@ -212,55 +212,54 @@ class _PatientUpdateProfilePageState extends State<PatientUpdateProfilePage> {
                   children: [
                     SizedBox(height: 16),
 
-                    GestureDetector(
-                      onTap: () async {
-                        // 🔥 async add karo
+                    // GestureDetector(
+                    //   onTap: () async {
+                    //     // 🔥 async add karo
 
-                        final updated = await Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (_) => NurseUpdatePasswordPage(
-                              phone: phone.text,
-                              currentPassword: password.text,
-                            ),
-                          ),
-                        );
+                    //     final updated = await Navigator.push(
+                    //       context,
+                    //       CupertinoPageRoute(
+                    //         builder: (_) => NurseUpdatePasswordPage(
+                    //           phone: phone.text,
+                    //           currentPassword: password.text,
+                    //         ),
+                    //       ),
+                    //     );
 
-                        if (updated == true) {
-                          _loadProfile(); // 🔥 correct function name
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 14,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppTheme.primary),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.lock_reset,
-                              size: 18,
-                              color: AppTheme.primary,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              "Update Admin Password",
-                              style: TextStyle(
-                                color: AppTheme.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
+                    //     if (updated == true) {
+                    //       _loadProfile(); // 🔥 correct function name
+                    //     }
+                    //   },
+                    //   child: Container(
+                    //     padding: const EdgeInsets.symmetric(
+                    //       vertical: 10,
+                    //       horizontal: 14,
+                    //     ),
+                    //     decoration: BoxDecoration(
+                    //       color: Colors.white,
+                    //       borderRadius: BorderRadius.circular(10),
+                    //       border: Border.all(color: AppTheme.primary),
+                    //     ),
+                    //     child: const Row(
+                    //       mainAxisAlignment: MainAxisAlignment.center,
+                    //       children: [
+                    //         Icon(
+                    //           Icons.lock_reset,
+                    //           size: 18,
+                    //           color: AppTheme.primary,
+                    //         ),
+                    //         SizedBox(width: 8),
+                    //         Text(
+                    //           "Update Admin Password",
+                    //           style: TextStyle(
+                    //             color: AppTheme.primary,
+                    //             fontWeight: FontWeight.w600,
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
                     SizedBox(height: 20),
 
                     _field("Name", name),

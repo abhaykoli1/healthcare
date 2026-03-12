@@ -40,10 +40,12 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading)
+    if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (data == null)
+    }
+    if (data == null) {
       return const Scaffold(body: Center(child: Text("No data")));
+    }
 
     final nurse = data!['nurse'];
     final kpi = data!['kpi'];

@@ -10,6 +10,7 @@ import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/core/utils/app_message.dart';
 import 'package:healthcare/features/duty/nurse_consent_page.dart';
 import 'package:healthcare/features/duty/nurse_profile.dart';
+import 'package:healthcare/features/duty/pataint_term.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'dashboard_service.dart';
@@ -73,6 +74,7 @@ class _DashboardPageState extends State<DashboardPage> {
       /* ==============================
        3️⃣ Load dashboard normally
     ============================== */
+
       if (!mounted) return;
 
       setState(() {
@@ -291,7 +293,11 @@ class _InfoCard extends StatelessWidget {
   final String text;
   final Color? color;
 
-  const _InfoCard({required this.icon, required this.text, this.color});
+  const _InfoCard({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {

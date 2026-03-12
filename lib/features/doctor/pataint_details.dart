@@ -222,7 +222,7 @@ class _VitalsTab extends StatelessWidget {
           );
         }
 
-        String _formatTime(dynamic time) {
+        String formatTime(dynamic time) {
           if (time == null) return "-";
 
           final dt = DateTime.parse(time.toString()).toLocal();
@@ -231,7 +231,7 @@ class _VitalsTab extends StatelessWidget {
         }
 
         return _Card(
-          title: "❤️ ${_formatTime(time)}",
+          title: "❤️ ${formatTime(time)}",
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

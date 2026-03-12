@@ -6,6 +6,7 @@ import 'package:healthcare/core/storage/token_storage.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/features/auth/about_us_page.dart';
 import 'package:healthcare/features/doctor/doctor_prescribe.dart';
+import 'package:healthcare/features/duty/pataint_term.dart';
 import 'package:healthcare/features/pataint/myComplaint.page.dart';
 import 'package:healthcare/features/pataint/patient_update_profile_page.dart';
 import 'package:healthcare/routes/app_routes.dart';
@@ -25,6 +26,18 @@ class _PataintProfilePageState extends State<PataintProfilePage> {
   void initState() {
     super.initState();
     future = ApiClient.get("/patient/profile/view");
+    fetchData();
+  }
+
+  void fetchData() async {
+    final res2 = await ApiClient.get("/payments/get-pataint-trnx");
+    if (res2["status"] == false) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        CupertinoPageRoute(builder: (context) => PataintTermCondiation()),
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -258,7 +271,6 @@ class _EquipmentPageState extends State<EquipmentPage> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                
                 onPressed: () => requestEquipment(e["id"]),
                 child: const Text("Request"),
               ),
@@ -463,7 +475,7 @@ class _VitalsTab extends StatelessWidget {
           );
         }
 
-        String _formatTime(dynamic time) {
+        String formatTime(dynamic time) {
           if (time == null) return "-";
 
           final dt = DateTime.parse(time.toString()).toLocal();
@@ -472,7 +484,7 @@ class _VitalsTab extends StatelessWidget {
         }
 
         return _Card(
-          title: "❤️ ${_formatTime(time)}",
+          title: "❤️ ${formatTime(time)}",
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

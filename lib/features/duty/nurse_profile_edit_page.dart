@@ -53,7 +53,9 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
   List<String> existingQualificationDocs = [];
   List<String> existingExperienceDocs = [];
   List<String> existingpolice = [];
-
+  File? aadhaarFront;
+  String? extractedAadhaar; // API se jo number aayega
+  bool aadhaarLoading = false;
   bool loading = false;
 
   // =========================================================
@@ -68,7 +70,7 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
 
   // =========================================================
   // LOAD PROFILE (GET API)
-  // =========================================================
+  
 
   Future<void> loadProfile() async {
     try {
@@ -177,6 +179,11 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
   // =========================================================
   // IMAGE PICKERS
   // =========================================================
+  String? referenceId;
+  bool otpLoading = false;
+  bool aadhaarVerified = false;
+
+  
 
   Future<File?> _pickSingle() async {
     final x = await picker.pickImage(source: ImageSource.gallery);
@@ -188,6 +195,7 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
     target.addAll(files.map((e) => File(e.path)));
     setState(() {});
   }
+
 
   // =========================================================
   // UI
@@ -228,55 +236,55 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
                     ),
 
                     const SizedBox(height: 20),
-                    GestureDetector(
-                      onTap: () async {
-                        // 🔥 async add karo
 
-                        final updated = await Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (_) => NurseUpdatePasswordPage(
-                              phone: phoneCtrl.text,
-                              currentPassword: resPassword,
-                            ),
-                          ),
-                        );
+                    // GestureDetector(
+                    //   onTap: () async {
+                    //     // 🔥 async add karo
 
-                        if (updated == true) {
-                          loadProfile(); // 🔥 refresh API again
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 14,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppTheme.primary),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.lock_reset,
-                              size: 18,
-                              color: AppTheme.primary,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              "Update Admin Password",
-                              style: TextStyle(
-                                color: AppTheme.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    //     final updated = await Navigator.push(
+                    //       context,
+                    //       CupertinoPageRoute(
+                    //         builder: (_) => NurseUpdatePasswordPage(
+                    //           phone: phoneCtrl.text,
+                    //           currentPassword: resPassword,
+                    //         ),
+                    //       ),
+                    //     );
 
+                    //     if (updated == true) {
+                    //       loadProfile(); // 🔥 refresh API again
+                    //     }
+                    //   },
+                    //   child: Container(
+                    //     padding: const EdgeInsets.symmetric(
+                    //       vertical: 10,
+                    //       horizontal: 14,
+                    //     ),
+                    //     decoration: BoxDecoration(
+                    //       color: Colors.white,
+                    //       borderRadius: BorderRadius.circular(10),
+                    //       border: Border.all(color: AppTheme.primary),
+                    //     ),
+                    //     child: const Row(
+                    //       mainAxisAlignment: MainAxisAlignment.center,
+                    //       children: [
+                    //         Icon(
+                    //           Icons.lock_reset,
+                    //           size: 18,
+                    //           color: AppTheme.primary,
+                    //         ),
+                    //         SizedBox(width: 8),
+                    //         Text(
+                    //           "Update Admin Password",
+                    //           style: TextStyle(
+                    //             color: AppTheme.primary,
+                    //             fontWeight: FontWeight.w600,
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
                     const SizedBox(height: 20),
 
                     // _field(phoneCtrl, "Phone"),
@@ -289,7 +297,7 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
                     const SizedBox(height: 12),
 
                     DropdownButtonFormField<String>(
-                      value: nurseType,
+                      initialValue: nurseType,
                       items: const [
                         DropdownMenuItem(value: "GNM", child: Text("GNM")),
                         DropdownMenuItem(value: "ANM", child: Text("ANM")),
@@ -307,6 +315,11 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
                       onChanged: (v) => setState(() => nurseType = v!),
                       decoration: _dec("Nurse Type"),
                     ),
+                    const SizedBox(height: 12),
+
+                    
+
+                    
 
                     const SizedBox(height: 12),
 

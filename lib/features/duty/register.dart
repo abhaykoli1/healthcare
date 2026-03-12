@@ -88,6 +88,8 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
     setState(() {});
   }
 
+  List<File> medicalDocs = [];
+
   // ---------------- SUBMIT ----------------
 
   Future<void> submit() async {
@@ -118,20 +120,26 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
       for (final f in experienceDocs) {
         experiencePaths.add(await FileUploadService.uploadFile(f));
       }
+      List<String> medicalPaths = [];
+
+      for (final f in medicalDocs) {
+        medicalPaths.add(await FileUploadService.uploadFile(f));
+      }
 
       final payload = {
         "phone": phoneCtrl.text,
         "other_number": otherPhoneCtrl.text,
         "name": nameCtrl.text,
+        "password_hash": phoneCtrl.text,
         "father_name": fatherCtrl.text.isNotEmpty ? fatherCtrl.text : null,
         "email": emailCtrl.text.isNotEmpty ? emailCtrl.text : null,
         "nurse_type": nurseType,
-        // "aadhaar_number": aadhaarCtrl.text.isNotEmpty ? aadhaarCtrl.text : null,
         "joining_date": DateFormat("yyyy-MM-dd").format(joiningDate!),
         "profile_photo": profilePhotoPath,
         "digital_signature": signaturePath,
         "qualification_docs": qualificationPaths,
         "experience_docs": experiencePaths,
+        "medical_docs": medicalPaths,
       };
 
       final res = await ApiClient.post("/nurse/self-signup", payload);
@@ -206,7 +214,7 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
                   children: [
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      value: nurseType,
+                      initialValue: nurseType,
                       items: const [
                         DropdownMenuItem(value: "GNM", child: Text("GNM")),
                         DropdownMenuItem(value: "ANM", child: Text("ANM")),
@@ -255,6 +263,11 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
                       title: "Experience",
                       count: experienceDocs.length,
                       onTap: () => _pickMultipleDocs(context, experienceDocs),
+                    ),
+                    _UploadTile(
+                      title: "HIV / AIDS / HBASG Documents",
+                      count: medicalDocs.length,
+                      onTap: () => _pickMultipleDocs(context, medicalDocs),
                     ),
                   ],
                 ),

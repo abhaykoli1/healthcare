@@ -3,6 +3,8 @@ import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/core/utils/app_access.dart';
 import 'package:healthcare/core/utils/app_message.dart';
 import 'package:healthcare/features/auth/auth_service.dart';
+import 'package:healthcare/features/auth/privacy_policy_page.dart';
+import 'package:healthcare/features/auth/terms_conditions_page.dart';
 import '../../routes/app_routes.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -16,7 +18,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final phoneCtrl = TextEditingController();
   bool loading = false;
-
+  bool agreed = false;
   @override
   void initState() {
     super.initState();
@@ -42,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.primarylight,
-      body: Container(
+      body: SizedBox(
         width: double.infinity,
         height: double.infinity,
         // decoration: const BoxDecoration(
@@ -150,6 +152,78 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
 
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Checkbox(
+                            value: agreed,
+                            onChanged: (v) {
+                              setState(() => agreed = v ?? false);
+                            },
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Wrap(
+                                children: [
+                                  const Text(
+                                    "By continuing, you agree to our ",
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const PrivacyPolicyPage(),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Privacy Policy",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.blue,
+                                        // decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                  const Text(
+                                    " and ",
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const TermsConditionsPage(),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Terms & Conditions",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.blue,
+                                        // decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+
+                                  const Text(
+                                    ".",
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
                       const SizedBox(height: 10),
 
                       /// 🔥 SEND OTP BUTTON
@@ -165,7 +239,21 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: loading
                               ? null
                               : () async {
-                                  if (phoneCtrl.text.length != 10) return;
+                                  if (phoneCtrl.text.length != 10) {
+                                    _snack(
+                                      "Please enter a valid 10-digit number",
+                                      error: true,
+                                    );
+                                    return;
+                                  }
+
+                                  if (!agreed) {
+                                    _snack(
+                                      "Please accept Privacy Policy & Terms to continue",
+                                      error: true,
+                                    );
+                                    return;
+                                  }
 
                                   setState(() => loading = true);
 

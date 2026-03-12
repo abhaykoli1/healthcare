@@ -184,6 +184,29 @@ class ApiClient {
       }
     }
   }
+
+  /* =====================================================
+   🔹 POST FORM-DATA (For Aadhaar Upload)
+===================================================== */
+  static Future<dynamic> postFormData(String path, File file) async {
+    final token = await TokenStorage.getToken();
+
+    final request = http.MultipartRequest("POST", Uri.parse("$baseUrl$path"));
+
+    request.headers.addAll({"Authorization": "Bearer $token"});
+
+    request.files.add(await http.MultipartFile.fromPath("file", file.path));
+
+    final response = await request.send();
+    final res = await http.Response.fromStream(response);
+
+    log("AADHAAR API STATUS: ${res.statusCode}");
+    log("AADHAAR API BODY: ${res.body}");
+
+    _handleError(res);
+
+    return jsonDecode(res.body);
+  }
 }
 
 // class FileUploadService {

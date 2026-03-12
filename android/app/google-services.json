@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "813675667597",
-    "project_id": "healthcare-hms",
-    "storage_bucket": "healthcare-hms.firebasestorage.app"
+    "project_number": "798855635324",
+    "project_id": "wecare360-69714",
+    "storage_bucket": "wecare360-69714.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:813675667597:android:95ac3df6204a5324b882c4",
+        "mobilesdk_app_id": "1:798855635324:android:235644a5da2d746bb744f9",
         "android_client_info": {
-          "package_name": "com.example.healthcare"
+          "package_name": "com.wecare.healthcare"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDlxcaVLmsuu4BDbUExXAlilF9ejDUB7dY"
+          "current_key": "AIzaSyCDSDEQ6j0BWVNADaHfvCW3EKJDjmZtjOc"
         }
       ],
       "services": {

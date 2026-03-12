@@ -41,49 +41,48 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDNLLhm3sOmWd_4_ZsUrNWo4In60uCvB_A',
-    appId: '1:813675667597:web:56e0875064deb831b882c4',
-    messagingSenderId: '813675667597',
-    projectId: 'healthcare-hms',
-    authDomain: 'healthcare-hms.firebaseapp.com',
-    storageBucket: 'healthcare-hms.firebasestorage.app',
-    measurementId: 'G-TTBR68P1MD',
+    apiKey: 'AIzaSyA8xwa0V13y8Za1UobMPSvFCTpBkteYXXM',
+    appId: '1:798855635324:web:37f387229d4198e2b744f9',
+    messagingSenderId: '798855635324',
+    projectId: 'wecare360-69714',
+    authDomain: 'wecare360-69714.firebaseapp.com',
+    storageBucket: 'wecare360-69714.firebasestorage.app',
+    measurementId: 'G-TK2J2PYBZN',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDlxcaVLmsuu4BDbUExXAlilF9ejDUB7dY',
-    appId: '1:813675667597:android:95ac3df6204a5324b882c4',
-    messagingSenderId: '813675667597',
-    projectId: 'healthcare-hms',
-    storageBucket: 'healthcare-hms.firebasestorage.app',
+    apiKey: 'AIzaSyCDSDEQ6j0BWVNADaHfvCW3EKJDjmZtjOc',
+    appId: '1:798855635324:android:235644a5da2d746bb744f9',
+    messagingSenderId: '798855635324',
+    projectId: 'wecare360-69714',
+    storageBucket: 'wecare360-69714.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCRek386SQYyb573QWvPKFVrG2S4GSATz0',
-    appId: '1:813675667597:ios:0941f93406813119b882c4',
-    messagingSenderId: '813675667597',
-    projectId: 'healthcare-hms',
-    storageBucket: 'healthcare-hms.firebasestorage.app',
-    iosBundleId: 'com.example.healthcare',
+    apiKey: 'AIzaSyBFk_IBiueqaM4O46gKoifTBBLwLigWwhs',
+    appId: '1:798855635324:ios:6d7510578c8303e6b744f9',
+    messagingSenderId: '798855635324',
+    projectId: 'wecare360-69714',
+    storageBucket: 'wecare360-69714.firebasestorage.app',
+    iosBundleId: 'com.wecare.healthcare',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCRek386SQYyb573QWvPKFVrG2S4GSATz0',
-    appId: '1:813675667597:ios:0941f93406813119b882c4',
-    messagingSenderId: '813675667597',
-    projectId: 'healthcare-hms',
-    storageBucket: 'healthcare-hms.firebasestorage.app',
-    iosBundleId: 'com.example.healthcare',
+    apiKey: 'AIzaSyBFk_IBiueqaM4O46gKoifTBBLwLigWwhs',
+    appId: '1:798855635324:ios:6d7510578c8303e6b744f9',
+    messagingSenderId: '798855635324',
+    projectId: 'wecare360-69714',
+    storageBucket: 'wecare360-69714.firebasestorage.app',
+    iosBundleId: 'com.wecare.healthcare',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDNLLhm3sOmWd_4_ZsUrNWo4In60uCvB_A',
-    appId: '1:813675667597:web:cd4312aa989bc811b882c4',
-    messagingSenderId: '813675667597',
-    projectId: 'healthcare-hms',
-    authDomain: 'healthcare-hms.firebaseapp.com',
-    storageBucket: 'healthcare-hms.firebasestorage.app',
-    measurementId: 'G-K575ZTXKR1',
+    apiKey: 'AIzaSyA8xwa0V13y8Za1UobMPSvFCTpBkteYXXM',
+    appId: '1:798855635324:web:dd6a7fd0e6e12486b744f9',
+    messagingSenderId: '798855635324',
+    projectId: 'wecare360-69714',
+    authDomain: 'wecare360-69714.firebaseapp.com',
+    storageBucket: 'wecare360-69714.firebasestorage.app',
+    measurementId: 'G-PX78TBX7KP',
   );
-
 }

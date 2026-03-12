@@ -111,52 +111,52 @@ class _EditDoctorProfilePageState extends State<EditDoctorProfilePage> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    GestureDetector(
-                      onTap: () async {
-                        final updated = await Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (_) => NurseUpdatePasswordPage(
-                              phone: phoneController.text,
-                              currentPassword: currentPassword,
-                            ),
-                          ),
-                        );
+                    // GestureDetector(
+                    //   onTap: () async {
+                    //     final updated = await Navigator.push(
+                    //       context,
+                    //       CupertinoPageRoute(
+                    //         builder: (_) => NurseUpdatePasswordPage(
+                    //           phone: phoneController.text,
+                    //           currentPassword: currentPassword,
+                    //         ),
+                    //       ),
+                    //     );
 
-                        if (updated == true) {
-                          loadProfile(); // ✅ correct name
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 14,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppTheme.primary),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.lock_reset,
-                              size: 18,
-                              color: AppTheme.primary,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              "Update Password",
-                              style: TextStyle(
-                                color: AppTheme.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    //     if (updated == true) {
+                    //       loadProfile(); // ✅ correct name
+                    //     }
+                    //   },
+                    //   child: Container(
+                    //     padding: const EdgeInsets.symmetric(
+                    //       vertical: 10,
+                    //       horizontal: 14,
+                    //     ),
+                    //     decoration: BoxDecoration(
+                    //       color: Colors.white,
+                    //       borderRadius: BorderRadius.circular(10),
+                    //       border: Border.all(color: AppTheme.primary),
+                    //     ),
+                    //     child: const Row(
+                    //       mainAxisAlignment: MainAxisAlignment.center,
+                    //       children: [
+                    //         Icon(
+                    //           Icons.lock_reset,
+                    //           size: 18,
+                    //           color: AppTheme.primary,
+                    //         ),
+                    //         SizedBox(width: 8),
+                    //         Text(
+                    //           "Update Password",
+                    //           style: TextStyle(
+                    //             color: AppTheme.primary,
+                    //             fontWeight: FontWeight.w600,
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
                     SizedBox(height: 20),
                     // ======================
                     // Specialization

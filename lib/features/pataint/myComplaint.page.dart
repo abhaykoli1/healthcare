@@ -19,6 +19,16 @@ class _MyComplaintsPageState extends State<MyComplaintsPage> {
     _loadComplaints();
   }
 
+  String _complaintType = "Other";
+
+  final List<String> _complaintTypes = [
+    "Staff Behavior",
+    "Late Arrival",
+    "Service Issue",
+    "Billing Issue",
+    "Equipment Issue",
+    "Other",
+  ];
   void _loadComplaints() {
     _future = ApiClient.get("/admin/complaint/my-complaints");
   }
@@ -29,7 +39,10 @@ class _MyComplaintsPageState extends State<MyComplaintsPage> {
     if (msg.isEmpty) return;
 
     try {
-      await ApiClient.post("/admin/complaint/create", {"message": msg});
+      await ApiClient.post("/admin/complaint/create", {
+        "message": msg,
+        "complaint_type": _complaintType,
+      });
 
       _messageCtrl.clear();
       Navigator.pop(context);
@@ -125,6 +138,27 @@ class _MyComplaintsPageState extends State<MyComplaintsPage> {
               ),
               const SizedBox(height: 12),
 
+              // ✅ YAHAN ADD KARNA HAI
+              DropdownButtonFormField<String>(
+                value: _complaintType,
+                items: _complaintTypes
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (val) {
+                  setState(() {
+                    _complaintType = val!;
+                  });
+                },
+                decoration: const InputDecoration(
+                  labelText: "Complaint Type",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
               TextField(
                 controller: _messageCtrl,
                 maxLines: 4,
@@ -139,17 +173,11 @@ class _MyComplaintsPageState extends State<MyComplaintsPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
-                    borderSide: const BorderSide(
-                      color: Colors.redAccent,
-                      width: 1,
-                    ),
+                    borderSide: BorderSide(color: Colors.redAccent, width: 1),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
-                    borderSide: const BorderSide(
-                      color: AppTheme.primary,
-                      width: 1,
-                    ),
+                    borderSide: BorderSide(color: AppTheme.primary, width: 1),
                   ),
                 ),
               ),

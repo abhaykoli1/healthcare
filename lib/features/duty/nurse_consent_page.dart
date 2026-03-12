@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/core/utils/app_message.dart';
-import 'package:healthcare/features/duty/lang/mainLangChang.dart';
+import 'package:healthcare/features/auth/login_page.dart';
+import 'package:healthcare/features/duty/lang/mainLangChang.dart'; // ← your Lang class
+import 'package:healthcare/services/razorpay_service.dart';
 import 'package:image_picker/image_picker.dart';
-
-// ✅ ADD THIS
 
 class NurseConsentPage extends StatefulWidget {
   final Map<String, dynamic> statusData;
@@ -23,6 +23,8 @@ class NurseConsentPage extends StatefulWidget {
 class _NurseConsentPageState extends State<NurseConsentPage> {
   File? signatureFile;
   bool loading = false;
+  final RazorpayService _service = RazorpayService();
+  String status = "";
 
   final ImagePicker _picker = ImagePicker();
 
@@ -49,6 +51,12 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
 
   // ================= SUBMIT =================
   Future<void> submitConsent() async {
+    if (agreed == false) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Accept the term & conditions")));
+      return;
+    }
     if (signatureFile == null) {
       ScaffoldMessenger.of(
         context,
@@ -82,8 +90,10 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
 
       AppMessage.snack = Lang.t("signup_done");
 
-      Navigator.pushReplacementNamed(context, "/login");
+      _service.createOrder(userId: nurseId);
+      log("Order created → waiting for payment callback");
     } catch (e) {
+      log("Submit error: $e");
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Failed: $e")));
@@ -91,6 +101,8 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
       if (mounted) setState(() => loading = false);
     }
   }
+
+  bool agreed = false;
 
   // ================= BOTTOM SHEET =================
   void showSignatureSourceSheet() {
@@ -113,7 +125,6 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
                 ),
               ),
               const SizedBox(height: 20),
-
               ListTile(
                 leading: const Icon(Icons.camera_alt),
                 title: Text(Lang.t("camera")),
@@ -122,7 +133,6 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
                   pickSignature(ImageSource.camera);
                 },
               ),
-
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: Text(Lang.t("gallery")),
@@ -138,6 +148,237 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
     );
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _service.init(
+      onWaiting: () {
+        setState(() {
+          status = "Verifying payment...";
+        });
+        _pollStatus();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _service.dispose();
+    super.dispose();
+  }
+
+  File? aadhaarFront;
+  String? extractedAadhaar; // API se jo number aayega
+  bool aadhaarLoading = false;
+
+  void _pollStatus() async {
+    for (int i = 0; i < 10; i++) {
+      await Future.delayed(const Duration(seconds: 3));
+      final result = await _service.checkStatus(context: context);
+
+      if (result == "success") {
+        if (!mounted) return;
+
+        setState(() => status = "SUCCESS");
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          CupertinoPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        );
+        return;
+      }
+
+      if (result == "failed") {
+        if (!mounted) return;
+        setState(() => status = "FAILED");
+        return;
+      }
+    }
+
+    if (mounted) {
+      setState(() => status = "Pending, please refresh");
+    }
+  }
+
+  final picker = ImagePicker();
+  String? referenceId;
+  bool otpLoading = false;
+  bool aadhaarVerified = false;
+  Future<File?> _pickSingle() async {
+    final x = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 100,
+    );
+    return x != null ? File(x.path) : null;
+  }
+Future<void> verifyAadhaarOtp(
+  String otp,
+  BuildContext dialogContext,
+) async {
+  try {
+    setState(() => otpLoading = true);
+
+    final res = await ApiClient.post("/adhar/verify-otp", {
+      "user_id": widget.statusData["user_id"].toString(),
+      "reference_id": referenceId,
+      "otp": otp,
+    });
+
+    // 🔥 IN_PROGRESS → DO NOT CLOSE DIALOG
+    if (res["success"] == false &&
+        res["error_code"] == "IN_PROGRESS") {
+
+      _snack(
+        "Verification is in progress. Please wait 30 seconds.",
+      );
+
+      return; // dialog open hi rahega
+    }
+
+    // ✅ SUCCESS
+    if (res["status"] == "SUCCESS" || res["success"] == true) {
+
+      Navigator.pop(dialogContext); // close only on success
+
+      setState(() {
+        aadhaarVerified = true;
+      });
+
+      _snack("Aadhaar Verified Successfully ✅");
+      return;
+    }
+
+    // ❌ FAILED
+    _snack("OTP verification failed", error: true);
+
+  } catch (e) {
+    _snack("Verification failed: $e", error: true);
+  } finally {
+    if (mounted) {
+      setState(() => otpLoading = false);
+    }
+  }
+}
+
+Future<void> sendAadhaarOtp() async {
+  try {
+    setState(() => otpLoading = true);
+
+    final res = await ApiClient.post("/adhar/generate-otp", {
+      "aadhaar_number": extractedAadhaar,
+    });
+
+    // 🔥 HANDLE IN_PROGRESS
+    if (res["success"] == false &&
+        res["error_code"] == "IN_PROGRESS") {
+
+      _snack(
+        "Verification already in progress. Please wait 30 seconds.",
+      );
+      return;
+    }
+
+    referenceId = res["reference_id"]?.toString() ??
+        res["data"]?["reference_id"]?.toString();
+
+    if (referenceId != null) {
+      _snack("OTP sent successfully");
+      _showOtpDialog();
+    } else {
+      _snack("Failed to send OTP, try again later", error: true);
+    }
+
+  } catch (e) {
+    _snack("OTP failed: $e", error: true);
+  } finally {
+    if (mounted) {
+      setState(() => otpLoading = false);
+    }
+  }
+}
+
+  void _snack(String msg, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: error ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
+void _showOtpDialog() {
+  final otpCtrl = TextEditingController();
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: const Text("Verify Aadhaar OTP"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("OTP sent to registered mobile"),
+            const SizedBox(height: 12),
+            TextField(
+              controller: otpCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Enter OTP",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: otpLoading
+                ? null
+                : () {
+                    verifyAadhaarOtp(
+                      otpCtrl.text.trim(),
+                      dialogContext, // 🔥 pass correct context
+                    );
+                  },
+            child: otpLoading
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text("Verify"),
+          ),
+        ],
+      );
+    },
+  );
+}
+  Future<void> uploadAadhaarFront(File file) async {
+    try {
+      setState(() => aadhaarLoading = true);
+
+      final res = await ApiClient.postFormData("/adhar/extract-aadhaar", file);
+
+      if (res["aadhaar_number"] != null) {
+        extractedAadhaar = res["aadhaar_number"];
+        _snack("Aadhaar detected: ${res["aadhaar_number"]}");
+      } else {
+        _snack("Aadhaar number not found, upload clear image ", error: true);
+      }
+    } catch (e) {
+      _snack("Aadhaar upload failed: $e", error: true);
+    } finally {
+      setState(() => aadhaarLoading = false);
+    }
+  }
+
+  final TextEditingController aadhaarController = TextEditingController();
+
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
@@ -147,7 +388,6 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
       appBar: AppBar(
         title: Text(Lang.t("title")),
         automaticallyImplyLeading: true,
-
         actions: [
           PopupMenuButton<AppLanguage>(
             icon: const Icon(Icons.language),
@@ -185,10 +425,10 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ================= LEGAL DECLARATION =================
+            // ────────────── LEGAL DECLARATION ──────────────
             Card(
               color: Colors.grey.shade50,
-              elevation: .5,
+              elevation: 0.5,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -197,25 +437,33 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(Lang.t("point1")),
-                    const SizedBox(height: 6),
-                    Text(Lang.t("point2")),
-                    const SizedBox(height: 6),
-                    Text(Lang.t("point3")),
-                    const SizedBox(height: 6),
-                    Text(Lang.t("point4")),
-                    const SizedBox(height: 6),
-                    Text(Lang.t("point5")),
-                    const SizedBox(height: 6),
-                    Text(Lang.t("point6")),
-                    const SizedBox(height: 6),
-                    Text(Lang.t("point7")),
-                    const SizedBox(height: 6),
-                    Text(Lang.t("point8")),
-                    const SizedBox(height: 6),
-                    Text(Lang.t("point9")),
-                    const SizedBox(height: 6),
-                    Text(Lang.t("point10")),
+                    Text(Lang.t("point1"), style: const TextStyle(height: 1.4)),
+                    const SizedBox(height: 10),
+                    Text(Lang.t("point2"), style: const TextStyle(height: 1.4)),
+                    const SizedBox(height: 10),
+                    Text(Lang.t("point3"), style: const TextStyle(height: 1.4)),
+                    const SizedBox(height: 10),
+                    Text(Lang.t("point4"), style: const TextStyle(height: 1.4)),
+                    const SizedBox(height: 10),
+                    Text(Lang.t("point5"), style: const TextStyle(height: 1.4)),
+                    const SizedBox(height: 10),
+                    Text(Lang.t("point6"), style: const TextStyle(height: 1.4)),
+                    const SizedBox(height: 10),
+                    Text(Lang.t("point7"), style: const TextStyle(height: 1.4)),
+                    const SizedBox(height: 10),
+                    Text(Lang.t("point8"), style: const TextStyle(height: 1.4)),
+                    const SizedBox(height: 10),
+                    Text(Lang.t("point9"), style: const TextStyle(height: 1.4)),
+                    const SizedBox(height: 10),
+                    Text(
+                      Lang.t("point10"),
+                      style: const TextStyle(height: 1.4),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      Lang.t("point11"),
+                      style: const TextStyle(height: 1.4),
+                    ),
                   ],
                 ),
               ),
@@ -223,74 +471,286 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
 
             const SizedBox(height: 20),
 
-            // ================= CONFIDENTIAL =================
+            // ────────────── CARE TAKER / COMBO SCOPE ──────────────
             Card(
               color: Colors.grey.shade50,
-              elevation: .5,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(Lang.t("confidential")),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ================= SIGNATURE =================
-            Card(
-              color: Colors.grey.shade50,
-              elevation: .5,
+              elevation: 0.5,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      Lang.t("upload_signature"),
+                      Lang.t("caretaker_title"),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 12),
+                    Text(
+                      Lang.t("point12"),
+                      style: const TextStyle(height: 1.4),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      Lang.t("point13"),
+                      style: const TextStyle(height: 1.4),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      Lang.t("point14"),
+                      style: const TextStyle(height: 1.4),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      Lang.t("point15"),
+                      style: const TextStyle(height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ────────────── CONFIDENTIALITY & DISCIPLINE ──────────────
+            Card(
+              color: Colors.grey.shade50,
+              elevation: 0.5,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      Lang.t("confidential_title"),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      Lang.t("confidential"),
+                      style: const TextStyle(height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ────────────── JOB APPLICATION FEE ──────────────
+            Card(
+              color: Colors.grey.shade50,
+              elevation: 0.5,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      Lang.t("fee_title"),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      Lang.t("fee_content"),
+                      style: const TextStyle(height: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 32),
+            // ────────────── AADHAAR SECTION ──────────────
+            // ────────────── AADHAAR SECTION ──────────────
+            Card(
+              color: Colors.grey.shade50,
+              elevation: 0.5,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Enter Aadhaar Number",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Aadhaar Input Field
+                    TextField(
+                      controller: aadhaarController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 12,
+                      decoration: const InputDecoration(
+                        labelText: "Aadhaar Number",
+                        border: OutlineInputBorder(),
+                        counterText: "",
+                      ),
+                      onChanged: (value) {
+                        setState(() {}); // refresh UI
+                      },
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Show button only when 12 digits entered
+                    if (!aadhaarVerified && aadhaarController.text.length == 12 &&
+                        RegExp(
+                          r'^[0-9]{12}$',
+                        ).hasMatch(aadhaarController.text)) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: otpLoading
+                              ? null
+                              : () {
+                                  extractedAadhaar = aadhaarController.text;
+                                  sendAadhaarOtp();
+                                },
+                          child: otpLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Text("Send OTP to Verify Aadhaar"),
+                        ),
+                      ),
+                    ],
+
+                    if (aadhaarVerified)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 12),
+                        child: Text(
+                          "✅ Aadhaar Verified",
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ────────────── SIGNATURE SECTION ──────────────
+            Card(
+              color: Colors.grey.shade50,
+              elevation: 0.5,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Text(
+                      Lang.t("upload_signature"),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
                     GestureDetector(
                       onTap: showSignatureSourceSheet,
                       child: Container(
-                        height: 150,
+                        height: 160,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.shade400),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: signatureFile != null
-                            ? Image.file(signatureFile!, fit: BoxFit.contain)
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  signatureFile!,
+                                  fit: BoxFit.contain,
+                                ),
+                              )
                             : Center(
                                 child: Text(
                                   Lang.t("tap_upload"),
-                                  style: const TextStyle(color: Colors.grey),
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 15,
+                                  ),
                                 ),
                               ),
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
-                    ElevatedButton(
-                      onPressed: loading ? null : submitConsent,
-                      child: loading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Padding(
-                              padding: const EdgeInsets.only(
-                                left: 10.0,
-                                right: 10.0,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Checkbox(
+                          value: agreed,
+                          onChanged: (v) {
+                            setState(() => agreed = v ?? false);
+                          },
+                        ),
+                        Text(
+                          "By accepting, you agree to our terms & condition.",
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: loading ? null : submitConsent,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                        ),
+                        child: loading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : Text(
+                                "Submit & Pay", // or "Pay & Submit" if you prefer
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
                               ),
-                              child: Text(Lang.t("submit")),
-                            ),
+                      ),
                     ),
                   ],
                 ),
@@ -298,6 +758,19 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
             ),
 
             const SizedBox(height: 40),
+
+            if (status.isNotEmpty)
+              Center(
+                child: Text(
+                  "Payment Status: $status",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: status == "SUCCESS" ? Colors.green : Colors.red,
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 20),
           ],
         ),
       ),

@@ -140,7 +140,7 @@ class _VisitCardState extends State<_VisitCard> {
     }
 
     final patientName = widget.visit["patient_name"] ?? "Unknown";
-    String _formatDate(String? iso) {
+    String formatDate(String? iso) {
       if (iso == null) return "-";
       final dt = DateTime.tryParse(iso);
       if (dt == null) return iso;
@@ -148,7 +148,7 @@ class _VisitCardState extends State<_VisitCard> {
       return "${dt.day}/${dt.month}/${dt.year}  ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}";
     }
 
-    String _prettyKey(String key) {
+    String prettyKey(String key) {
       return key
           .replaceAll("_", " ")
           .split(" ")
@@ -188,9 +188,9 @@ class _VisitCardState extends State<_VisitCard> {
                   .where((e) => e.key != "id") // hide id
                   .map((e) {
                     if (e.key == "recorded_at") {
-                      return _row("Recorded At", _formatDate(e.value));
+                      return _row("Recorded At", formatDate(e.value));
                     }
-                    return _row(_prettyKey(e.key), e.value);
+                    return _row(prettyKey(e.key), e.value);
                   }),
             ],
           ),
@@ -313,7 +313,7 @@ class _VisitCardState extends State<_VisitCard> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                ...meds.map((m) => Text(m["medicine_name"])).toList(),
+                ...meds.map((m) => Text(m["medicine_name"])),
               ],
 
               const SizedBox(height: 12),

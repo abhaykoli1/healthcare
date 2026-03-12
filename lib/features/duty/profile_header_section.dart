@@ -23,7 +23,7 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     print("profile: $profile");
     final active = status == "ACTIVE";
-    final String? p = profile;
+    final String p = profile;
     final hasProfile = profile.isNotEmpty;
     return Container(
       padding: const EdgeInsets.all(20),

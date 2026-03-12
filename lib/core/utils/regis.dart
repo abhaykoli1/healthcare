@@ -235,7 +235,7 @@ class _NurseSelfSignupPageState extends ConsumerState<NurseSelfSignupPage> {
                   children: [
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      value: nurseType,
+                      initialValue: nurseType,
                       items: const [
                         DropdownMenuItem(value: "GNM", child: Text("GNM")),
                         DropdownMenuItem(value: "ANM", child: Text("ANM")),

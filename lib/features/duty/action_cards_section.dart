@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:healthcare/core/network/api_client.dart';
@@ -9,7 +8,6 @@ import 'package:healthcare/features/duty/attendance.dart';
 import 'package:healthcare/features/duty/biometric_auth.dart';
 import 'package:healthcare/features/duty/duty_service.dart';
 import '../../routes/app_routes.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ActionCardsSection extends StatelessWidget {
   final String staffId;
