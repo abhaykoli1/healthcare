@@ -48,7 +48,7 @@ class RazorpayService {
       log(data.toString());
 
       _razorpay.open({
-        "key": data["key"],
+        "key": "rzp_live_SXwi1jtJbTmZIR",
         "amount": data["amount"],
         "order_id": data["order_id"],
         "name": "Joining Fee",
@@ -82,7 +82,7 @@ class RazorpayService {
       log(data.toString());
 
       _razorpay.open({
-        "key": data["key"],
+        "key": "rzp_live_SXwi1jtJbTmZIR",
         "amount": data["amount"],
         "order_id": data["order_id"],
         "name": "Joining Fee",

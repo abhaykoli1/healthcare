@@ -405,13 +405,7 @@ class _CompleteVisitDialogState extends State<_CompleteVisitDialog> {
 
     try {
       print("🚀 SUBMIT START");
-
-      /// 1️⃣ NOTE
-      await ApiClient.post("/nurse/patients/${widget.patientId}/notes", {
-        "note": noteCtrl.text,
-      });
-
-      /// 2️⃣ VITALS
+      /// 1️⃣ VITALS
       final payload = {
         "bp": bpCtrl.text,
         "pulse": _int(pulseCtrl.text),
@@ -437,22 +431,99 @@ class _CompleteVisitDialogState extends State<_CompleteVisitDialog> {
         payload,
       );
 
-      /// 3️⃣ COMPLETE VISIT
+      /// 2️⃣ COMPLETE VISIT
       await ApiClient.post("/nurse/visits/${widget.visitId}/complete", {});
+
+      /// 3️⃣ OPTIONAL REMARK
+      await _openRemarkDialog();
 
       print("✅ VISIT COMPLETED");
 
+      if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e, s) {
       print("🔥 SUBMIT ERROR => $e");
       print(s);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Failed to submit")));
     }
 
     setState(() => loading = false);
+  }
+
+  Future<void> _openRemarkDialog() async {
+    noteCtrl.clear();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        bool savingRemark = false;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> saveRemark() async {
+              final remark = noteCtrl.text.trim();
+              if (remark.isEmpty) {
+                Navigator.pop(dialogContext);
+                return;
+              }
+
+              setDialogState(() => savingRemark = true);
+
+              try {
+                await ApiClient.post("/nurse/patients/${widget.patientId}/notes", {
+                  "title": "Given Medicine",
+                  "note": remark,
+                });
+
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+              } catch (_) {
+                if (!dialogContext.mounted) return;
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text("Failed to save remark")),
+                );
+                setDialogState(() => savingRemark = false);
+              }
+            }
+
+            return AlertDialog(
+              title: const Text("Given Medicine"),
+              content: TextFormField(
+                controller: noteCtrl,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: "Remark (Optional)",
+                  hintText: "Type remark if needed",
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: savingRemark
+                      ? null
+                      : () => Navigator.pop(dialogContext),
+                  child: const Text("Skip"),
+                ),
+                ElevatedButton(
+                  onPressed: savingRemark ? null : saveRemark,
+                  child: savingRemark
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text("Save"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   /// ================= UI =================
@@ -513,9 +584,6 @@ class _CompleteVisitDialogState extends State<_CompleteVisitDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _sectionTitle("Daily Note"),
-                _input("Note", noteCtrl, max: 3),
-
                 _sectionTitle("Vitals"),
                 _grid([
                   _input("BP", bpCtrl),

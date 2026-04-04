@@ -411,8 +411,21 @@ class _DetailsTab extends StatelessWidget {
               : Column(
                   children: notes.map<Widget>((n) {
                     return ListTile(
-                      title: Text(n["nurse_name"] ?? "Nurse"),
-                      subtitle: Text(n["note"]),
+                      title: Text(n["title"] ?? n["nurse_name"] ?? "Daily Note"),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(n["note"] ?? ""),
+                          const SizedBox(height: 4),
+                          Text(
+                            "By ${n["nurse_name"] ?? "Nurse"}",
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   }).toList(),
                 ),

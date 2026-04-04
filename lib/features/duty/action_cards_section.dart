@@ -25,7 +25,7 @@ class ActionCardsSection extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.only(bottom: 12.0),
-          child: PunchCard(status: status),
+          child: PunchCard(staffId: staffId, status: status),
         ),
         GridView.count(
           shrinkWrap: true,
@@ -67,9 +67,10 @@ class ActionCardsSection extends StatelessWidget {
 }
 
 class PunchCard extends StatefulWidget {
+  final String staffId;
   final String status;
 
-  const PunchCard({super.key, required this.status});
+  const PunchCard({super.key, required this.staffId, required this.status});
   @override
   State<PunchCard> createState() => _PunchCardState();
 }
@@ -118,17 +119,6 @@ class _PunchCardState extends State<PunchCard> {
     loading = false;
     canPunchIn = status != "ACTIVE";
     canPunchOut = status == "ACTIVE";
-  }
-
-  // 🔁 Load punch status
-  Future<void> _loadStatus() async {
-    try {
-      final status = await DutyService.getDutyStatus();
-      if (!mounted) return;
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => loading = false);
-    }
   }
 
   Future<void> sendLiveLocation() async {
@@ -235,17 +225,50 @@ class _PunchCardState extends State<PunchCard> {
 
   /// 🔐 STEP 1: BIOMETRIC CHECK
   Future<void> _handlePunchWithBiometric({required bool inOut}) async {
+    final validUser = await _isLoggedInNurseAllowed();
+    if (!validUser) {
+      _snack("Only the logged-in nurse can punch ${inOut ? "IN" : "OUT"}.");
+      return;
+    }
+
+    final hasFaceBiometric = await BiometricAuth.hasFaceBiometric();
     final authenticated = await BiometricAuth.authenticate(
-      reason: inOut ? "Authenticate to Punch IN" : "Authenticate to Punch OUT",
+      reason: hasFaceBiometric
+          ? (inOut
+                ? "Verify your face to punch IN"
+                : "Verify your face to punch OUT")
+          : (inOut
+                ? "Verify your biometric to punch IN"
+                : "Verify your biometric to punch OUT"),
     );
 
     if (!authenticated) {
-      _snack("Authentication failed. Punch not allowed.");
+      _snack(
+        hasFaceBiometric
+            ? "Face verification failed. Punch not allowed."
+            : "Biometric verification failed. Punch not allowed.",
+      );
       return;
     }
 
     // ✅ BIOMETRIC OK → API CALL
     await _handlePunch(inOut: inOut);
+  }
+
+  Future<bool> _isLoggedInNurseAllowed() async {
+    try {
+      if (widget.staffId.trim().isEmpty) {
+        return false;
+      }
+
+      final res = await ApiClient.get("/nurse/profile/me/json");
+      final nurse = (res["nurse"] as Map?) ?? const {};
+      final currentNurseId = nurse["nurse_id"]?.toString() ?? "";
+
+      return currentNurseId.isNotEmpty && currentNurseId == widget.staffId;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _handlePunch({required bool inOut}) async {

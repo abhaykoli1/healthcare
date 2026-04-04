@@ -212,91 +212,79 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
     );
     return x != null ? File(x.path) : null;
   }
-Future<void> verifyAadhaarOtp(
-  String otp,
-  BuildContext dialogContext,
-) async {
-  try {
-    setState(() => otpLoading = true);
 
-    final res = await ApiClient.post("/adhar/verify-otp", {
-      "user_id": widget.statusData["user_id"].toString(),
-      "reference_id": referenceId,
-      "otp": otp,
-    });
+  Future<void> verifyAadhaarOtp(String otp, BuildContext dialogContext) async {
+    try {
+      setState(() => otpLoading = true);
 
-    // 🔥 IN_PROGRESS → DO NOT CLOSE DIALOG
-    if (res["success"] == false &&
-        res["error_code"] == "IN_PROGRESS") {
-
-      _snack(
-        "Verification is in progress. Please wait 30 seconds.",
-      );
-
-      return; // dialog open hi rahega
-    }
-
-    // ✅ SUCCESS
-    if (res["status"] == "SUCCESS" || res["success"] == true) {
-
-      Navigator.pop(dialogContext); // close only on success
-
-      setState(() {
-        aadhaarVerified = true;
+      final res = await ApiClient.post("/adhar/verify-otp", {
+        "user_id": widget.statusData["user_id"].toString(),
+        "reference_id": referenceId,
+        "otp": otp,
       });
 
-      _snack("Aadhaar Verified Successfully ✅");
-      return;
-    }
+      // 🔥 IN_PROGRESS → DO NOT CLOSE DIALOG
+      if (res["success"] == false && res["error_code"] == "IN_PROGRESS") {
+        _snack("Verification is in progress. Please wait 30 seconds.");
 
-    // ❌ FAILED
-    _snack("OTP verification failed", error: true);
+        return; // dialog open hi rahega
+      }
 
-  } catch (e) {
-    _snack("Verification failed: $e", error: true);
-  } finally {
-    if (mounted) {
-      setState(() => otpLoading = false);
-    }
-  }
-}
+      // ✅ SUCCESS
+      if (res["status"] == "SUCCESS" || res["success"] == true) {
+        Navigator.pop(dialogContext); // close only on success
 
-Future<void> sendAadhaarOtp() async {
-  try {
-    setState(() => otpLoading = true);
+        setState(() {
+          aadhaarVerified = true;
+        });
 
-    final res = await ApiClient.post("/adhar/generate-otp", {
-      "aadhaar_number": extractedAadhaar,
-    });
+        _snack("Aadhaar Verified Successfully ✅");
+        return;
+      }
 
-    // 🔥 HANDLE IN_PROGRESS
-    if (res["success"] == false &&
-        res["error_code"] == "IN_PROGRESS") {
-
-      _snack(
-        "Verification already in progress. Please wait 30 seconds.",
-      );
-      return;
-    }
-
-    referenceId = res["reference_id"]?.toString() ??
-        res["data"]?["reference_id"]?.toString();
-
-    if (referenceId != null) {
-      _snack("OTP sent successfully");
-      _showOtpDialog();
-    } else {
-      _snack("Failed to send OTP, try again later", error: true);
-    }
-
-  } catch (e) {
-    _snack("OTP failed: $e", error: true);
-  } finally {
-    if (mounted) {
-      setState(() => otpLoading = false);
+      // ❌ FAILED
+      _snack("OTP verification failed", error: true);
+    } catch (e) {
+      _snack("Verification failed: $e", error: true);
+    } finally {
+      if (mounted) {
+        setState(() => otpLoading = false);
+      }
     }
   }
-}
+
+  Future<void> sendAadhaarOtp() async {
+    try {
+      setState(() => otpLoading = true);
+
+      final res = await ApiClient.post("/adhar/generate-otp", {
+        "aadhaar_number": extractedAadhaar,
+      });
+
+      // 🔥 HANDLE IN_PROGRESS
+      if (res["success"] == false && res["error_code"] == "IN_PROGRESS") {
+        _snack("Verification already in progress. Please wait 30 seconds.");
+        return;
+      }
+
+      referenceId =
+          res["reference_id"]?.toString() ??
+          res["data"]?["reference_id"]?.toString();
+
+      if (referenceId != null) {
+        _snack("OTP sent successfully");
+        _showOtpDialog();
+      } else {
+        _snack("Failed to send OTP, try again later", error: true);
+      }
+    } catch (e) {
+      _snack("OTP failed: $e", error: true);
+    } finally {
+      if (mounted) {
+        setState(() => otpLoading = false);
+      }
+    }
+  }
 
   void _snack(String msg, {bool error = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -307,57 +295,58 @@ Future<void> sendAadhaarOtp() async {
     );
   }
 
-void _showOtpDialog() {
-  final otpCtrl = TextEditingController();
+  void _showOtpDialog() {
+    final otpCtrl = TextEditingController();
 
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (dialogContext) {
-      return AlertDialog(
-        title: const Text("Verify Aadhaar OTP"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("OTP sent to registered mobile"),
-            const SizedBox(height: 12),
-            TextField(
-              controller: otpCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Enter OTP",
-                border: OutlineInputBorder(),
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Verify Aadhaar OTP"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("OTP sent to registered mobile"),
+              const SizedBox(height: 12),
+              TextField(
+                controller: otpCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: "Enter OTP",
+                  border: OutlineInputBorder(),
+                ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: otpLoading
+                  ? null
+                  : () {
+                      verifyAadhaarOtp(
+                        otpCtrl.text.trim(),
+                        dialogContext, // 🔥 pass correct context
+                      );
+                    },
+              child: otpLoading
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text("Verify"),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: otpLoading
-                ? null
-                : () {
-                    verifyAadhaarOtp(
-                      otpCtrl.text.trim(),
-                      dialogContext, // 🔥 pass correct context
-                    );
-                  },
-            child: otpLoading
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text("Verify"),
-          ),
-        ],
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
+
   Future<void> uploadAadhaarFront(File file) async {
     try {
       setState(() => aadhaarLoading = true);
@@ -618,7 +607,8 @@ void _showOtpDialog() {
                     const SizedBox(height: 10),
 
                     // Show button only when 12 digits entered
-                    if (!aadhaarVerified && aadhaarController.text.length == 12 &&
+                    if (!aadhaarVerified &&
+                        aadhaarController.text.length == 12 &&
                         RegExp(
                           r'^[0-9]{12}$',
                         ).hasMatch(aadhaarController.text)) ...[
@@ -707,10 +697,8 @@ void _showOtpDialog() {
                     ),
 
                     const SizedBox(height: 24),
-
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Checkbox(
                           value: agreed,
@@ -718,9 +706,13 @@ void _showOtpDialog() {
                             setState(() => agreed = v ?? false);
                           },
                         ),
-                        Text(
-                          "By accepting, you agree to our terms & condition.",
-                          style: TextStyle(fontSize: 12),
+                        Expanded(
+                          child: Text(
+                            "By accepting, you agree to our terms & conditions.",
+                            style: TextStyle(fontSize: 12),
+                            overflow: TextOverflow.visible,
+                            softWrap: true,
+                          ),
                         ),
                       ],
                     ),

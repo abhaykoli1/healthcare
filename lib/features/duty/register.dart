@@ -321,7 +321,7 @@ class _NurseSelfSignupPageState extends State<NurseSelfSignupPage> {
             Expanded(
               child: Text(
                 joiningDate == null
-                    ? "Select Joining Date"
+                    ? "Select Registration Date"
                     : DateFormat("dd MMM yyyy").format(joiningDate!),
               ),
             ),

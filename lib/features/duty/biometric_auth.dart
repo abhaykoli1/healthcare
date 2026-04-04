@@ -3,28 +3,36 @@ import 'package:local_auth/local_auth.dart';
 class BiometricAuth {
   static final LocalAuthentication _auth = LocalAuthentication();
 
+  static Future<bool> hasFaceBiometric() async {
+    try {
+      final available = await _auth.getAvailableBiometrics();
+      return available.contains(BiometricType.face);
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<bool> authenticate({
     String reason = "Authenticate to continue",
   }) async {
     try {
       final bool isSupported = await _auth.isDeviceSupported();
       final bool canCheck = await _auth.canCheckBiometrics;
-
-      // 👇 DEBUG – YAHAN LAGANA HAI
       final available = await _auth.getAvailableBiometrics();
-      print("Device Supported: $isSupported");
-      print("Can Check Biometrics: $canCheck");
-      print("Available biometrics: $available");
 
-      if (!isSupported) return false;
+      if (!isSupported || !canCheck || available.isEmpty) {
+        return false;
+      }
 
       final bool authenticated = await _auth.authenticate(
         localizedReason: reason,
+        biometricOnly: true,
+        sensitiveTransaction: true,
+        persistAcrossBackgrounding: false,
       );
 
       return authenticated;
-    } catch (e) {
-      print("Biometric error: $e");
+    } catch (_) {
       return false;
     }
   }
