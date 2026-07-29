@@ -60,6 +60,10 @@ class AuthService {
 
     await TokenStorage.saveToken(data["access_token"]);
     await TokenStorage.saveRole(data["role"]);
+    final userId = data["user_id"]?.toString();
+    if (userId != null && userId.isNotEmpty) {
+      await TokenStorage.saveUserId(userId);
+    }
 
     if (data["role"] == null) {
       throw Exception("User role not found");

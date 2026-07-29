@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
+import 'package:healthcare/core/storage/token_storage.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/core/utils/app_message.dart';
 import 'package:healthcare/features/auth/login_page.dart';
@@ -217,8 +218,23 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
     try {
       setState(() => otpLoading = true);
 
+      var userId = widget.statusData["user_id"]?.toString();
+      if (userId == null || userId.isEmpty || userId == "null") {
+        userId = await TokenStorage.getUserId();
+      }
+      if (userId == null || userId.isEmpty) {
+        final currentUser = await ApiClient.get("/auth/me");
+        userId = currentUser["id"]?.toString();
+        if (userId != null && userId.isNotEmpty) {
+          await TokenStorage.saveUserId(userId);
+        }
+      }
+      if (userId == null || userId.isEmpty) {
+        throw Exception("Unable to identify your account. Please login again.");
+      }
+
       final res = await ApiClient.post("/adhar/verify-otp", {
-        "user_id": widget.statusData["user_id"].toString(),
+        "user_id": userId,
         "reference_id": referenceId,
         "otp": otp,
       });
@@ -267,8 +283,7 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
         return;
       }
 
-      referenceId =
-          res["reference_id"]?.toString() ??
+      referenceId = res["reference_id"]?.toString() ??
           res["data"]?["reference_id"]?.toString();
 
       if (referenceId != null) {
@@ -406,9 +421,7 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
           ),
         ],
       ),
-
       backgroundColor: AppTheme.primarylight,
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -666,7 +679,6 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
                     GestureDetector(
                       onTap: showSignatureSourceSheet,
                       child: Container(
@@ -695,7 +707,6 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
                               ),
                       ),
                     ),
-
                     const SizedBox(height: 24),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -717,7 +728,6 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
                       ],
                     ),
                     SizedBox(height: 10),
-
                     SizedBox(
                       width: double.infinity,
                       height: 50,
