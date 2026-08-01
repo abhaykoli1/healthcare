@@ -26,21 +26,19 @@ class ApiClient {
     );
 
     log(res.body);
-    _handleError(res);
+    await _handleError(res);
 
     return jsonDecode(res.body);
   }
 
   static Future<dynamic> getWithoutTokern(String path) async {
-    final token = await TokenStorage.getToken();
-
     final res = await http.get(
       Uri.parse("$baseUrl$path"),
       headers: {"Content-Type": "application/json"},
     );
 
     log(res.body);
-    _handleError(res);
+    await _handleError(res);
 
     return jsonDecode(res.body);
   }
@@ -67,7 +65,7 @@ class ApiClient {
 
     log(res.body);
 
-    _handleError(res);
+    await _handleError(res);
 
     return jsonDecode(res.body);
   }
@@ -89,7 +87,7 @@ class ApiClient {
 
     log(res.body);
 
-    _handleError(res);
+    await _handleError(res);
 
     if (res.body.isEmpty) {
       return {"success": true};
@@ -115,7 +113,7 @@ class ApiClient {
 
     log(res.body);
 
-    _handleError(res);
+    await _handleError(res);
 
     return jsonDecode(res.body);
   }
@@ -137,7 +135,7 @@ class ApiClient {
 
     log(res.body);
 
-    _handleError(res);
+    await _handleError(res);
 
     return jsonDecode(res.body);
   }
@@ -145,7 +143,7 @@ class ApiClient {
   /* =====================================================
       🔥 CENTRAL ERROR HANDLER
   ===================================================== */
-  static void _handleError(http.Response res) async {
+  static Future<void> _handleError(http.Response res) async {
     /* ======================
        🔴 AUTO LOGOUT ON 401
     ====================== */
@@ -154,7 +152,7 @@ class ApiClient {
 
       // show message
       final ctx = appNavigatorKey.currentContext;
-      if (ctx != null) {
+      if (ctx != null && ctx.mounted) {
         ScaffoldMessenger.of(ctx).showSnackBar(
           const SnackBar(
             content: Text("Session expired. Please login again"),
@@ -176,12 +174,18 @@ class ApiClient {
        NORMAL ERRORS
     ====================== */
     if (res.statusCode >= 400) {
+      String message = "API Error (${res.statusCode})";
       try {
         final body = jsonDecode(res.body);
-        throw Exception(body["detail"] ?? "API Error");
+        if (body is Map) {
+          message = body["detail"]?.toString() ??
+              body["message"]?.toString() ??
+              message;
+        }
       } catch (_) {
-        throw Exception("API Error (${res.statusCode})");
+        // Keep the status-based fallback when the response is not JSON.
       }
+      throw Exception(message);
     }
   }
 
@@ -203,7 +207,7 @@ class ApiClient {
     log("AADHAAR API STATUS: ${res.statusCode}");
     log("AADHAAR API BODY: ${res.body}");
 
-    _handleError(res);
+    await _handleError(res);
 
     return jsonDecode(res.body);
   }
