@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:healthcare/features/doctor/doctor_home.dart';
 import 'package:healthcare/features/pataint/patain.profile.dart';
 import 'package:healthcare/features/staff/staff_profile_complaints_page.dart';
+import 'package:healthcare/features/payment/payment_verification_page.dart';
+import '../storage/payment_storage.dart';
 import '../../core/storage/token_storage.dart';
 import '../../routes/app_routes.dart';
 
@@ -21,10 +23,21 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   Future<void> _checkAuth() async {
+    final pendingPayment = await PaymentStorage.getPending();
     final token = await TokenStorage.getToken();
     final role = await TokenStorage.getRole();
 
     if (!mounted) return;
+
+    if (pendingPayment != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PaymentVerificationPage.fromPending(pendingPayment),
+        ),
+      );
+      return;
+    }
 
     if (token != null && token.isNotEmpty) {
       if (role == "DOCTOR") {

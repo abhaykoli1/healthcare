@@ -212,7 +212,6 @@ class _LoginPageState extends State<LoginPage> {
                                       ),
                                     ),
                                   ),
-
                                   const Text(
                                     ".",
                                     style: TextStyle(fontSize: 12),
@@ -257,15 +256,29 @@ class _LoginPageState extends State<LoginPage> {
 
                                   setState(() => loading = true);
 
-                                  await AuthService.sendOtp(phoneCtrl.text);
+                                  try {
+                                    await AuthService.sendOtp(phoneCtrl.text);
 
-                                  setState(() => loading = false);
-
-                                  Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.otp,
-                                    arguments: phoneCtrl.text,
-                                  );
+                                    if (!mounted) return;
+                                    Navigator.pushNamed(
+                                      context,
+                                      AppRoutes.otp,
+                                      arguments: phoneCtrl.text,
+                                    );
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    _snack(
+                                      e
+                                          .toString()
+                                          .replaceAll("Exception:", "")
+                                          .trim(),
+                                      error: true,
+                                    );
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => loading = false);
+                                    }
+                                  }
                                 },
                           child: loading
                               ? const SizedBox(

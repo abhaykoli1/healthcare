@@ -1,14 +1,13 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/core/utils/app_message.dart';
-import 'package:healthcare/features/auth/login_page.dart';
 import 'package:healthcare/features/duty/lang/mainLangChang.dart'; // ← your Lang class
+import 'package:healthcare/features/payment/payment_verification_page.dart';
 import 'package:healthcare/services/razorpay_service.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -25,7 +24,6 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
   File? signatureFile;
   bool loading = false;
   final RazorpayService _service = RazorpayService();
-  String status = "";
 
   final ImagePicker _picker = ImagePicker();
 
@@ -91,8 +89,8 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
 
       AppMessage.snack = Lang.t("signup_done");
 
-      _service.createOrder(userId: nurseId);
-      log("Order created → waiting for payment callback");
+      await _service.createOrder(userId: nurseId);
+      log("Order created → waiting for Razorpay result");
     } catch (e) {
       log("Submit error: $e");
       ScaffoldMessenger.of(
@@ -154,11 +152,21 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
     super.initState();
     aadhaarVerified = widget.statusData["aadhaar_verified"] == true;
     _service.init(
-      onWaiting: () {
-        setState(() {
-          status = "Verifying payment...";
-        });
-        _pollStatus();
+      onResult: (result) {
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentVerificationPage(
+              orderId: result.orderId,
+              flow: "nurse",
+              userId: widget.statusData["nurse_id"]?.toString(),
+              initialStatus: result.checkoutSucceeded ? "created" : "failed",
+              checkoutResult: result,
+            ),
+          ),
+          (_) => false,
+        );
       },
     );
   }
@@ -172,36 +180,6 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
   File? aadhaarFront;
   String? extractedAadhaar; // API se jo number aayega
   bool aadhaarLoading = false;
-
-  void _pollStatus() async {
-    for (int i = 0; i < 10; i++) {
-      await Future.delayed(const Duration(seconds: 3));
-      final result = await _service.checkStatus(context: context);
-
-      if (result == "success") {
-        if (!mounted) return;
-
-        setState(() => status = "SUCCESS");
-
-        Navigator.pushAndRemoveUntil(
-          context,
-          CupertinoPageRoute(builder: (_) => const LoginPage()),
-          (route) => false,
-        );
-        return;
-      }
-
-      if (result == "failed") {
-        if (!mounted) return;
-        setState(() => status = "FAILED");
-        return;
-      }
-    }
-
-    if (mounted) {
-      setState(() => status = "Pending, please refresh");
-    }
-  }
 
   final picker = ImagePicker();
   String? referenceId;
@@ -787,19 +765,6 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
                 ),
               ),
             ),
-
-            const SizedBox(height: 40),
-
-            if (status.isNotEmpty)
-              Center(
-                child: Text(
-                  "Payment Status: $status",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: status == "SUCCESS" ? Colors.green : Colors.red,
-                  ),
-                ),
-              ),
 
             const SizedBox(height: 20),
           ],

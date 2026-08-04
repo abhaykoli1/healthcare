@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/network/base.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
+import 'package:healthcare/core/storage/payment_storage.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/features/auth/about_us_page.dart';
-import 'package:healthcare/features/doctor/doctor_prescribe.dart';
 import 'package:healthcare/features/duty/pataint_term.dart';
 import 'package:healthcare/features/pataint/myComplaint.page.dart';
 import 'package:healthcare/features/pataint/patient_update_profile_page.dart';
+import 'package:healthcare/features/payment/payment_verification_page.dart';
 import 'package:healthcare/routes/app_routes.dart';
 import 'package:intl/intl.dart';
 
@@ -20,28 +21,108 @@ class PataintProfilePage extends StatefulWidget {
 }
 
 class _PataintProfilePageState extends State<PataintProfilePage> {
-  late Future<dynamic> future;
+  Future<dynamic>? future;
+  bool _checkingPayment = true;
+  String? _paymentError;
 
   @override
   void initState() {
     super.initState();
-    future = ApiClient.get("/patient/profile/view");
-    fetchData();
+    _bootstrap();
   }
 
-  void fetchData() async {
-    final res2 = await ApiClient.get("/payments/get-pataint-trnx");
-    if (res2["status"] == false) {
+  Future<void> _bootstrap() async {
+    try {
+      final payment = await ApiClient.get("/payments/my-status");
+      if (!mounted) return;
+
+      if (payment["paid"] == true) {
+        setState(() {
+          future = ApiClient.get("/patient/profile/view");
+          _checkingPayment = false;
+        });
+        return;
+      }
+
+      final orderId = payment["order_id"]?.toString();
+      final paymentStatus = payment["status"]?.toString() ?? "not_started";
+      if (orderId != null && orderId.isNotEmpty) {
+        await PaymentStorage.save(
+          orderId: orderId,
+          flow: "patient",
+          localStatus: paymentStatus,
+        );
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentVerificationPage(
+              orderId: orderId,
+              flow: "patient",
+              initialStatus: paymentStatus,
+            ),
+          ),
+          (_) => false,
+        );
+        return;
+      }
+
       Navigator.pushAndRemoveUntil(
         context,
-        CupertinoPageRoute(builder: (context) => PataintTermCondiation()),
-        (route) => false,
+        CupertinoPageRoute(builder: (_) => const PataintTermCondiation()),
+        (_) => false,
       );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _checkingPayment = false;
+        _paymentError = error.toString().replaceAll("Exception:", "").trim();
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_checkingPayment) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_paymentError != null || future == null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off_rounded,
+                    size: 56, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  _paymentError ?? "Could not verify payment status.",
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _checkingPayment = true;
+                      _paymentError = null;
+                    });
+                    _bootstrap();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text("TRY AGAIN"),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return DefaultTabController(
       length: 4,
       child: Scaffold(
@@ -71,7 +152,7 @@ class _PataintProfilePageState extends State<PataintProfilePage> {
           ),
         ),
         body: FutureBuilder<dynamic>(
-          future: future,
+          future: future!,
           builder: (context, snap) {
             if (!snap.hasData) {
               return const Center(child: CircularProgressIndicator());
@@ -90,7 +171,6 @@ class _PataintProfilePageState extends State<PataintProfilePage> {
         ),
         bottomSheet: Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 20),
-
           child: GestureDetector(
             onTap: () async {
               await TokenStorage.clearToken();
@@ -198,25 +278,26 @@ class _EquipmentPageState extends State<EquipmentPage> {
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : equipments.isEmpty
-          ? const Center(child: Text("No equipments found"))
-          : RefreshIndicator(
-              onRefresh: loadEquipments,
-              child: GridView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: equipments.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.75,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemBuilder: (context, index) {
-                  final e = equipments[index];
+              ? const Center(child: Text("No equipments found"))
+              : RefreshIndicator(
+                  onRefresh: loadEquipments,
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: equipments.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.75,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemBuilder: (context, index) {
+                      final e = equipments[index];
 
-                  return _equipmentCard(e);
-                },
-              ),
-            ),
+                      return _equipmentCard(e);
+                    },
+                  ),
+                ),
     );
   }
 
@@ -411,7 +492,8 @@ class _DetailsTab extends StatelessWidget {
               : Column(
                   children: notes.map<Widget>((n) {
                     return ListTile(
-                      title: Text(n["title"] ?? n["nurse_name"] ?? "Daily Note"),
+                      title:
+                          Text(n["title"] ?? n["nurse_name"] ?? "Daily Note"),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -507,16 +589,13 @@ class _VitalsTab extends StatelessWidget {
               item("Temp (°F)", v["temperature"]),
               item("O₂ Level", v["o2_level"]),
               item("RBS", v["rbs"]),
-
               item("BiPAP", v["bipap_ventilator"]),
               item("IV Fluids", v["iv_fluids"]),
               item("Suction", v["suction"]),
               item("Feeding Tube", v["feeding_tube"]),
-
               item("Vomit/Aspirate", v["vomit_aspirate"]),
               item("Urine", v["urine"]),
               item("Stool", v["stool"]),
-
               item("Notes", v["other"]),
             ],
           ),
@@ -565,14 +644,11 @@ class _MedicationsTab extends StatelessWidget {
                 const SizedBox(height: 10),
                 const Divider(),
                 const SizedBox(height: 6),
-
                 const Text(
                   "Instructions",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
-
                 const SizedBox(height: 6),
-
                 ...notes.map(
                   (n) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
@@ -627,21 +703,21 @@ class _Card extends StatelessWidget {
 }
 
 Widget _info(String label, dynamic val) => Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-    const SizedBox(height: 2),
-    Text(
-      val?.toString() ?? "-",
-      maxLines: 2, // 👈 important
-      softWrap: true,
-      overflow: TextOverflow.ellipsis,
-      style: const TextStyle(fontSize: 14),
-    ),
-  ],
-);
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 2),
+        Text(
+          val?.toString() ?? "-",
+          maxLines: 2, // 👈 important
+          softWrap: true,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 14),
+        ),
+      ],
+    );
 
 Widget _empty() => const Center(
-  child: Text("No data available", style: TextStyle(color: Colors.grey)),
-);
+      child: Text("No data available", style: TextStyle(color: Colors.grey)),
+    );

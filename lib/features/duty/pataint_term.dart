@@ -1,11 +1,10 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/features/duty/lang/mainLangChang.dart';
-import 'package:healthcare/features/pataint/patain.profile.dart';
+import 'package:healthcare/features/payment/payment_verification_page.dart';
 import 'package:healthcare/services/razorpay_service.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -20,7 +19,6 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
   File? signatureFile;
   bool loading = false;
   final RazorpayService _service = RazorpayService();
-  String status = "";
 
   final ImagePicker _picker = ImagePicker();
 
@@ -55,7 +53,7 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
     setState(() => loading = true);
 
     try {
-      _service.createOrder2();
+      await _service.createOrder2();
       log("Patient fee order created → waiting for callback");
     } catch (e) {
       log("Payment init error: $e");
@@ -90,7 +88,6 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                 ),
               ),
               const SizedBox(height: 20),
-
               ListTile(
                 leading: const Icon(Icons.camera_alt),
                 title: Text(Lang2.t("camera")),
@@ -99,7 +96,6 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                   pickSignature(ImageSource.camera);
                 },
               ),
-
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: Text(Lang2.t("gallery")),
@@ -120,14 +116,20 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
     super.initState();
 
     _service.init(
-      onWaiting: () {
-        if (mounted) {
-          setState(() {
-            status = "Verifying payment...";
-          });
-        }
-
-        _pollStatus();
+      onResult: (result) {
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentVerificationPage(
+              orderId: result.orderId,
+              flow: "patient",
+              initialStatus: result.checkoutSucceeded ? "created" : "failed",
+              checkoutResult: result,
+            ),
+          ),
+          (_) => false,
+        );
       },
     );
   }
@@ -138,56 +140,16 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
     super.dispose();
   }
 
-  /// PAYMENT STATUS POLLING
-  void _pollStatus() async {
-    for (int i = 0; i < 10; i++) {
-      await Future.delayed(const Duration(seconds: 3));
-
-      final result = await _service.checkStatus(context: context);
-
-      if (!mounted) return;
-
-      if (result == "success") {
-        setState(() => status = "SUCCESS");
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-
-          Navigator.pushReplacement(
-            context,
-            CupertinoPageRoute(
-              builder: (_) => const PataintProfilePage(),
-            ),
-          );
-        });
-
-        return;
-      }
-
-      if (result == "failed") {
-        setState(() => status = "FAILED");
-        return;
-      }
-    }
-
-    if (mounted) {
-      setState(() => status = "Pending, please refresh");
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(Lang2.t("patient_title")),
         automaticallyImplyLeading: true,
-
         actions: [
           PopupMenuButton<AppLanguage>(
             icon: const Icon(Icons.language),
-
             onSelected: changeLanguage,
-
             itemBuilder: (_) => const [
               PopupMenuItem(
                 value: AppLanguage.english,
@@ -213,32 +175,24 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
           ),
         ],
       ),
-
       backgroundColor: AppTheme.primarylight,
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-
             /// MAIN DECLARATION CARD
             Card(
               color: Colors.grey.shade50,
               elevation: 0.5,
-
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-
               child: Padding(
                 padding: const EdgeInsets.all(16),
-
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     Text(
                       Lang2.t("patient_title"),
                       style: const TextStyle(
@@ -246,22 +200,15 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     Text(Lang2.t("patient_point1")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point2")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point3")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point4")),
-
                     const SizedBox(height: 16),
-
                     Text(
                       Lang2.t("services_title"),
                       style: const TextStyle(
@@ -269,22 +216,15 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Text(Lang2.t("patient_point5")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point6")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point7")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point8")),
-
                     const SizedBox(height: 16),
-
                     Text(
                       Lang2.t("patient_caretaker_title"),
                       style: const TextStyle(
@@ -292,19 +232,13 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Text(Lang2.t("patient_point9")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point10")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point11")),
-
                     const SizedBox(height: 16),
-
                     Text(
                       Lang2.t("legal_title"),
                       style: const TextStyle(
@@ -312,16 +246,11 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Text(Lang2.t("patient_point12")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point13")),
-
                     const SizedBox(height: 16),
-
                     Text(
                       Lang2.t("nonsolicitation_title"),
                       style: const TextStyle(
@@ -329,19 +258,13 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Text(Lang2.t("patient_point14")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point15")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point16")),
-
                     const SizedBox(height: 16),
-
                     Text(
                       Lang2.t("confidentiality_title"),
                       style: const TextStyle(
@@ -349,13 +272,9 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Text(Lang2.t("patient_point17")),
-
                     const SizedBox(height: 16),
-
                     Text(
                       Lang2.t("payment_title"),
                       style: const TextStyle(
@@ -363,16 +282,11 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Text(Lang2.t("patient_point18")),
                     const SizedBox(height: 10),
-
                     Text(Lang2.t("patient_point19")),
-
                     const SizedBox(height: 16),
-
                     Text(
                       Lang2.t("declaration"),
                       style: const TextStyle(
@@ -380,9 +294,7 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Text(Lang2.t("patient_point20")),
                   ],
                 ),
@@ -401,7 +313,6 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                     });
                   },
                 ),
-
                 const Expanded(
                   child: Text(
                     "By accepting, you agree to our terms & conditions.",
@@ -413,12 +324,10 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
 
             ElevatedButton(
               onPressed: loading ? null : submitConsent,
-
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green.shade700,
                 minimumSize: const Size.fromHeight(54),
               ),
-
               child: loading
                   ? const SizedBox(
                       height: 24,
@@ -436,26 +345,6 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
                       ),
                     ),
             ),
-
-            const SizedBox(height: 24),
-
-            if (status.isNotEmpty)
-              Center(
-                child: Text(
-                  "Payment Status: $status",
-
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-
-                    color: status == "SUCCESS"
-                        ? Colors.green
-                        : status == "FAILED"
-                            ? Colors.red
-                            : Colors.orange,
-                  ),
-                ),
-              ),
 
             const SizedBox(height: 40),
           ],

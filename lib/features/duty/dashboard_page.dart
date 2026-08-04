@@ -1,20 +1,13 @@
-import 'dart:convert';
-import 'dart:developer';
-import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:healthcare/core/network/api_client.dart';
 import 'package:healthcare/core/storage/token_storage.dart';
+import 'package:healthcare/core/storage/payment_storage.dart';
 import 'package:healthcare/core/theme/app_theme.dart';
-import 'package:healthcare/core/utils/app_message.dart';
-import 'package:healthcare/features/duty/nurse_consent_page.dart';
 import 'package:healthcare/features/duty/nurse_profile.dart';
-import 'package:healthcare/features/duty/pataint_term.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:healthcare/features/payment/payment_verification_page.dart';
 
 import 'dashboard_service.dart';
-import 'package:healthcare/features/duty/consent_service.dart';
 import 'profile_header_section.dart';
 import 'active_visits_section.dart';
 import 'weekly_work_graph.dart';
@@ -52,6 +45,37 @@ class _DashboardPageState extends State<DashboardPage> {
        1️⃣ Get nurse profile
     ============================== */
       final res = await ApiClient.get("/nurse/profile/me/json");
+
+      final payment = await ApiClient.get("/payments/my-status");
+      if (payment["paid"] != true) {
+        final nurseId = res["nurse"]["id"]?.toString();
+        final orderId = payment["order_id"]?.toString();
+        final paymentStatus = payment["status"]?.toString() ?? "not_started";
+
+        if (orderId != null && orderId.isNotEmpty) {
+          await PaymentStorage.save(
+            orderId: orderId,
+            flow: "nurse",
+            userId: nurseId,
+            localStatus: paymentStatus,
+          );
+        }
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentVerificationPage(
+              orderId: orderId ?? "Not created",
+              flow: "nurse",
+              userId: nurseId,
+              initialStatus:
+                  paymentStatus == "not_started" ? "failed" : paymentStatus,
+            ),
+          ),
+          (_) => false,
+        );
+        return;
+      }
 
       final isSignatureVerified = res["nurse"]["digital_signature_verify"];
 
@@ -107,7 +131,6 @@ class _DashboardPageState extends State<DashboardPage> {
             onPressed: () => Navigator.pop(context, false),
             child: const Text("Cancel"),
           ),
-
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
