@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:healthcare/firebase_options.dart';
 import 'routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/responsive_app_frame.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -15,7 +16,7 @@ final FlutterLocalNotificationsPlugin localNotifications =
     FlutterLocalNotificationsPlugin();
 
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);          
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
 void main() async {
@@ -77,7 +78,6 @@ class _HospitalAppState extends State<HospitalApp> {
       id: 0,
       title: message.notification?.title,
       body: message.notification?.body,
-
       notificationDetails: NotificationDetails(android: androidDetails),
     );
   }
@@ -91,7 +91,7 @@ class _HospitalAppState extends State<HospitalApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.lightTheme.copyWith(brightness: Brightness.dark),
       themeMode: ThemeMode.light,
-
+      builder: (context, child) => ResponsiveAppFrame(child: child),
       initialRoute: AppRoutes.root,
       routes: AppRoutes.routes,
     );

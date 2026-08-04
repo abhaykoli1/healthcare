@@ -151,81 +151,122 @@ class _OtpPageState extends State<OtpPage> {
     final phone = ModalRoute.of(context)!.settings.arguments as String;
 
     return Scaffold(
-      backgroundColor: AppTheme.primarylight,
       appBar: AppBar(title: const Text("Verify OTP")),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Text(
-              "OTP sent to $phone",
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(26, 30, 26, 26),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primarylight,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.mark_email_read_outlined,
+                            size: 38),
+                      ),
+                      const SizedBox(height: 20),
+                      Text('Check your messages',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineSmall),
+                      const SizedBox(height: 8),
+                      Text(
+                        'We sent a 6-digit verification code to\n$phone',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: AppTheme.textSecondary, height: 1.5),
+                      ),
+                      const SizedBox(height: 26),
 
-            /* OTP FIELD */
-            TextField(
-              controller: otpCtrl,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              maxLength: 6,
-              autofocus: true,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) {
-                if (!loading && !resendLoading) {
-                  _verifyOtp(phone);
-                }
-              },
-              decoration: const InputDecoration(
-                labelText: "Enter OTP",
-                prefixIcon: Icon(Icons.lock),
-                counterText: "",
+                      /* OTP FIELD */
+                      TextField(
+                        controller: otpCtrl,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                        maxLength: 6,
+                        autofocus: true,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) {
+                          if (!loading && !resendLoading) {
+                            _verifyOtp(phone);
+                          }
+                        },
+                        style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 8),
+                        textAlign: TextAlign.center,
+                        decoration: const InputDecoration(
+                          labelText: "6-digit OTP",
+                          prefixIcon: Icon(Icons.lock_outline_rounded),
+                          counterText: "",
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      /* TIMER */
+                      if (!canResend)
+                        Text(
+                          "Resend OTP in $secondsRemaining sec",
+                          style: const TextStyle(color: AppTheme.textSecondary),
+                        ),
+                      const SizedBox(height: 22),
+
+                      /* VERIFY BUTTON */
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: loading || resendLoading
+                              ? null
+                              : () => _verifyOtp(phone),
+                          icon: loading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.verified_user_outlined),
+                          label:
+                              Text(loading ? 'VERIFYING…' : "VERIFY & LOGIN"),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      /* RESEND BUTTON - independent from Verify */
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: canResend && !loading && !resendLoading
+                              ? () => _resendOtp(phone)
+                              : null,
+                          icon: resendLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.refresh_rounded),
+                          label:
+                              Text(resendLoading ? 'SENDING…' : "RESEND OTP"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-
-            /* TIMER */
-            if (!canResend)
-              Text(
-                "Resend OTP in $secondsRemaining sec",
-                style: const TextStyle(color: Colors.grey),
-              ),
-            const SizedBox(height: 24),
-
-            /* VERIFY BUTTON */
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed:
-                    loading || resendLoading ? null : () => _verifyOtp(phone),
-                child: loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text("VERIFY & LOGIN"),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            /* RESEND BUTTON - independent from Verify */
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: canResend && !loading && !resendLoading
-                    ? () => _resendOtp(phone)
-                    : null,
-                child: resendLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text("RESEND OTP"),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
