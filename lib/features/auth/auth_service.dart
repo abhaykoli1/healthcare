@@ -11,6 +11,28 @@ import '../../core/storage/token_storage.dart';
 
 class AuthService {
   static const baseUrl = baseUrlApi;
+  static const testPhones = {
+    "9000000001",
+    "9000000002",
+    "9000000003",
+  };
+
+  static bool isTestPhone(String phone) => testPhones.contains(phone.trim());
+
+  static Future<void> loginTestAccount(String phone, context) async {
+    if (!isTestPhone(phone)) {
+      throw Exception("This is not a test account");
+    }
+    final res = await http.post(
+      Uri.parse("$baseUrl/auth/login-password"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"phone": phone.trim(), "password": phone.trim()}),
+    );
+    if (res.statusCode != 200) {
+      throw Exception("Test login failed");
+    }
+    await _completeLogin(jsonDecode(res.body), context);
+  }
 
   /// 🔹 SEND OTP
   static Future<void> sendOtp(String phone) async {
@@ -54,6 +76,10 @@ class AuthService {
     /// ✅ SUCCESS
     final data = jsonDecode(res.body);
     log(data.toString());
+    await _completeLogin(data, context);
+  }
+
+  static Future<void> _completeLogin(dynamic data, context) async {
     if (!data.containsKey("access_token")) {
       throw Exception("Invalid server response");
     }

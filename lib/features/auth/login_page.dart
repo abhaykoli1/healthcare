@@ -58,6 +58,10 @@ class _LoginPageState extends State<LoginPage> {
     }
     setState(() => loading = true);
     try {
+      if (AuthService.isTestPhone(phoneCtrl.text.trim())) {
+        await AuthService.loginTestAccount(phoneCtrl.text.trim(), context);
+        return;
+      }
       await AuthService.sendOtp(phoneCtrl.text.trim());
       if (!mounted) return;
       Navigator.pushNamed(context, AppRoutes.otp,
