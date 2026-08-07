@@ -217,6 +217,14 @@ class _DashboardPageState extends State<DashboardPage> {
                           nurseType: nurse["nurse_type"] ?? "-",
                           status: nurse["status"] ?? "Unknown",
                           workedTime: nurse["worked_time"]?.toString() ?? "0",
+                          onProfilePressed: () {
+                            Navigator.push(
+                              context,
+                              CupertinoPageRoute(
+                                builder: (context) => const NurseDetailPage(),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -245,33 +253,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
 
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _logout,
-                          icon: const Icon(Icons.logout, color: Colors.white),
-                          label: const Text(
-                            "Logout",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            elevation: 3,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             );

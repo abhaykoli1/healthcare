@@ -204,6 +204,42 @@ class _PaymentVerificationPageState extends State<PaymentVerificationPage> {
     );
   }
 
+  Future<void> _logout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Logout"),
+          content: const Text("Are you sure you want to logout?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Logout"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout != true) return;
+
+    await PaymentStorage.clear();
+    await TokenStorage.clearToken();
+    await TokenStorage.clearRole();
+    await TokenStorage.clearUserId();
+
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (_) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSuccess = _state == PaymentViewState.success;
@@ -359,6 +395,16 @@ class _PaymentVerificationPageState extends State<PaymentVerificationPage> {
                             label: const Text("CHECK STATUS AGAIN"),
                           ),
                         ],
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: OutlinedButton.icon(
+                            onPressed: _logout,
+                            icon: const Icon(Icons.logout_rounded),
+                            label: const Text("LOGOUT"),
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         const Text(
                           "Do not close the app while payment is being verified.",

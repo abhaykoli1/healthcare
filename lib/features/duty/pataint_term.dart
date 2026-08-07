@@ -41,6 +41,33 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
     }
   }
 
+  Future<bool> _showPaymentConfirmationDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Payment Confirmation"),
+          content: const Text(
+            "By continuing, you are paying the registration fee to enable your approved relative to access the patient’s medical reports and related information through our secure platform. This payment helps activate the requested access for the registered relative.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text("Cancel"),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text("Continue to Pay"),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirmed ?? false;
+  }
+
   /// SUBMIT (PAY ₹199)
   Future<void> submitConsent() async {
     if (agreed == false) {
@@ -49,6 +76,9 @@ class _PataintTermCondiationState extends State<PataintTermCondiation> {
       );
       return;
     }
+
+    final confirmed = await _showPaymentConfirmationDialog();
+    if (!confirmed) return;
 
     setState(() => loading = true);
 

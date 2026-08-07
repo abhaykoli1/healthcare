@@ -24,6 +24,73 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
     _doctorFuture = ApiClient.get("/doctor/my-patients");
   }
 
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Logout"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    await TokenStorage.clearToken();
+    await TokenStorage.clearRole();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+  }
+
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete Account"),
+        content: const Text(
+          "This action will permanently remove your doctor account and linked profile data. Continue?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ApiClient.delete("/auth/delete-account", {});
+      await TokenStorage.clearToken();
+      await TokenStorage.clearRole();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Account deactivated successfully")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,7 +144,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               child: Column(
                 children: [
                   /// 👨‍⚕️ Doctor Card
@@ -169,6 +236,26 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                         "${doctor["experience_years"] ?? 0} yrs",
                       ),
                     ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Card(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.logout, color: Colors.red),
+                          title: const Text("Logout"),
+                          onTap: _logout,
+                        ),
+                        const Divider(),
+                        ListTile(
+                          leading: const Icon(Icons.delete_forever, color: Colors.red),
+                          title: const Text("Delete Account"),
+                          onTap: _deleteAccount,
+                        ),
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 20),
@@ -266,38 +353,6 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
             ),
           );
         },
-      ),
-      bottomSheet: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-        child: GestureDetector(
-          onTap: () async {
-            await TokenStorage.clearToken();
-            await TokenStorage.clearRole();
-            if (!mounted) return;
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.login,
-              (route) => false,
-            );
-          },
-          child: Container(
-            height: 50,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              "Logout",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

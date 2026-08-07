@@ -5,6 +5,8 @@ import 'package:healthcare/core/theme/app_theme.dart';
 import 'package:healthcare/features/auth/about_us_page.dart';
 import 'package:healthcare/features/duty/nurse_profile_edit_page.dart';
 import '../../core/network/api_client.dart';
+import '../../core/storage/token_storage.dart';
+import '../../routes/app_routes.dart';
 
 class NurseDetailPage extends StatefulWidget {
   const NurseDetailPage({super.key});
@@ -38,6 +40,82 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
     }
   }
 
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Logout"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    await TokenStorage.clearToken();
+    await TokenStorage.clearRole();
+    if (!mounted) return;
+
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+  }
+
+  Future<void> _deleteAccount() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete Account"),
+        content: const Text(
+          "This action will permanently remove your account and related profile data. Continue?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await ApiClient.delete("/auth/delete-account", {});
+      await TokenStorage.clearToken();
+      await TokenStorage.clearRole();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Account deactivated successfully")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -68,6 +146,11 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
 
         actions: [
           IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: "Logout",
+            onPressed: _logout,
+          ),
+          IconButton(
             icon: const Icon(Icons.info_outline), // about icon
             tooltip: "About Us",
             onPressed: () {
@@ -84,8 +167,30 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
         padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
         child: Column(
           children: [
-            // ===== BASIC INFO CARD =====
-
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.logout, color: Colors.red),
+                          title: const Text("Logout"),
+                          onTap: _logout,
+                        ),
+                        const Divider(),
+                        ListTile(
+                          leading: const Icon(Icons.delete_forever, color: Colors.red),
+                          title: const Text("Delete Account"),
+                          onTap: _deleteAccount,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
             // const SizedBox(height: 20),
             Stack(
               children: [
@@ -289,6 +394,34 @@ class _NurseDetailPageState extends State<NurseDetailPage> {
 
             // ===== ATTENDANCE GRAPH CARD =====
             _buildAttendanceGraphSection(graph),
+            const SizedBox(height: 24),
+
+            // ===== LOGOUT BUTTON =====
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _logout,
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text(
+                    "Logout",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 2,
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
           ],
         ),

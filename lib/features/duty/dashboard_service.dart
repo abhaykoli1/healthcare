@@ -22,7 +22,18 @@ class DashboardService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception("Failed to load dashboard");
+      String message = response.body;
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map) {
+          message = body["detail"]?.toString() ??
+              body["message"]?.toString() ??
+              response.body;
+        }
+      } catch (_) {}
+      throw Exception(
+        "Failed to load dashboard (${response.statusCode}): $message",
+      );
     }
 
     return jsonDecode(response.body);

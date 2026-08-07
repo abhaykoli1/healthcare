@@ -48,6 +48,33 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
     });
   }
 
+  Future<bool> _showPaymentConfirmationDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Payment Confirmation"),
+          content: const Text(
+            "By continuing, you are paying the subscription fee to activate your profile for job placement and to receive healthcare job opportunities through our platform. This payment helps keep your account active and visible to employers.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text("Cancel"),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text("Continue to Pay"),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirmed ?? false;
+  }
+
   // ================= SUBMIT =================
   Future<void> submitConsent() async {
     if (agreed == false) {
@@ -62,6 +89,9 @@ class _NurseConsentPageState extends State<NurseConsentPage> {
       ).showSnackBar(SnackBar(content: Text(Lang.t("please_upload"))));
       return;
     }
+
+    final confirmed = await _showPaymentConfirmationDialog();
+    if (!confirmed) return;
 
     setState(() => loading = true);
 

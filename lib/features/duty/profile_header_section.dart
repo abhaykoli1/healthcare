@@ -8,6 +8,7 @@ class ProfileHeader extends StatelessWidget {
   final String status;
   final String profile;
   final String workedTime;
+  final VoidCallback? onProfilePressed;
 
   const ProfileHeader({
     super.key,
@@ -17,6 +18,7 @@ class ProfileHeader extends StatelessWidget {
     required this.status,
     required this.profile,
     required this.workedTime,
+    this.onProfilePressed,
   });
 
   @override
@@ -81,8 +83,55 @@ class ProfileHeader extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 14),
-
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            size: 14,
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(width: 6),
+                          const Expanded(
+                            child: Text(
+                              "Tap this card to open your profile",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (onProfilePressed != null)
+                      ElevatedButton.icon(
+                        onPressed: onProfilePressed,
+                        icon: const Icon(Icons.person, size: 16),
+                        label: const Text(
+                          "Profile",
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppTheme.primary,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     _Pill(

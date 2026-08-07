@@ -76,8 +76,26 @@ class _NurseEditProfilePageState extends State<NurseEditProfilePage> {
     try {
       setState(() => loading = true);
 
-      final res = await ApiClient.get("/nurse/self-signup/me");
-      print(res);
+      late final Map<String, dynamic> res;
+      try {
+        res = await ApiClient.get("/nurse/self-signup/me");
+      } catch (_) {
+        final data = await ApiClient.get("/nurse/profile/me/json");
+        res = {
+          ...data["nurse"],
+          "phone": data["nurse"]["phone"],
+          "other_number": data["nurse"]["other_number"],
+          "name": data["nurse"]["name"],
+          "father_name": data["nurse"]["father_name"],
+          "email": data["nurse"]["email"],
+          "profile_photo": data["nurse"]["profile_photo"],
+          "digital_signature": data["nurse"]["digital_signature"],
+          "qualification_docs": data["nurse"]["qualification_docs"],
+          "experience_docs": data["nurse"]["experience_docs"],
+          "police": data["nurse"]["police"],
+          "joining_date": data["nurse"]["joining_date"],
+        };
+      }
 
       phoneCtrl.text = res["phone"] ?? "";
       resPassword = res["password_hash"] ?? "";
