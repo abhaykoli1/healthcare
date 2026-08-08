@@ -18,7 +18,7 @@ class TermsConditionsPage extends StatelessWidget {
 }
 
 const String _termsText = """
-Effective Date: __ / __ / 2026
+Effective Date: 08 / 08 / 2026
 
 These Terms & Conditions ("Terms") govern the use of the website, mobile application, 
 and services provided by WECARE360 GLOBAL HOME HEALTHCARE PRIVATE LIMITED ("Company", 

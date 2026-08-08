@@ -42,7 +42,7 @@ android {
        ✅ Default Config
        ===================================================== */
     defaultConfig {
-        applicationId = "com.wecare.healthcare"
+        applicationId = "com.wecare.newapp"
 
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
