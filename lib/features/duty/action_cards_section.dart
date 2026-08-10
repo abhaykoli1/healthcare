@@ -263,9 +263,13 @@ class _PunchCardState extends State<PunchCard> {
 
       final res = await ApiClient.get("/nurse/profile/me/json");
       final nurse = (res["nurse"] as Map?) ?? const {};
-      final currentNurseId = nurse["nurse_id"]?.toString() ?? "";
+      // The profile API exposes the MongoDB identifier as `id`. Keep the
+      // `nurse_id` fallback for compatibility with older API responses.
+      final currentNurseId =
+          (nurse["id"] ?? nurse["nurse_id"])?.toString().trim() ?? "";
 
-      return currentNurseId.isNotEmpty && currentNurseId == widget.staffId;
+      return currentNurseId.isNotEmpty &&
+          currentNurseId == widget.staffId.trim();
     } catch (_) {
       return false;
     }
